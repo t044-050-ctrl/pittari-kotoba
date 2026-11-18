@@ -2682,9 +2682,9 @@ function showStartModal() {
         作文にぴったりなことばをえらぼう！
       </p>
       <div class="grade-selector">
-        <button class="grade-btn ${currentGrade === 'low' ? 'active' : ''}" onclick="selectGrade('low', this)">【低学年】</button>
-        <button class="grade-btn ${currentGrade === 'mid' ? 'active' : ''}" onclick="selectGrade('mid', this)">【中学年】</button>
-        <button class="grade-btn ${currentGrade === 'high' ? 'active' : ''}" onclick="selectGrade('high', this)">【高学年】</button>
+        <button class="grade-btn ${currentGrade === 'low' ? 'active' : ''}" onclick="selectGrade('low', this)">【１･２年生】</button>
+        <button class="grade-btn ${currentGrade === 'mid' ? 'active' : ''}" onclick="selectGrade('mid', this)">【３･４年生】</button>
+        <button class="grade-btn ${currentGrade === 'high' ? 'active' : ''}" onclick="selectGrade('high', this)">【５･６年生】</button>
       </div>
       <div class="start-action-row">
         <button id="start-play-btn" class="start-play-btn" onclick="startGameFromModal(this)" ${currentGrade ? '' : 'disabled'}>GAME START</button>
