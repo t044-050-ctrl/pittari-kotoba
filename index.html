@@ -1,0 +1,2908 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+ <title>ぴったりことば</title>
+ <meta property="og:title" content="ぴったりことば">
+    <meta property="og:description" content="【国語】作文の空欄にぴったりな言葉を選ぶゲームです。">
+    <meta property="og:type" content="website">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+    user-select: none; 
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent; 
+  }
+  body {
+    background-color: #0b0f19;
+    color: #0f172a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN', 'BIZ UDPGothic', 'Meiryo', sans-serif;
+    overflow: hidden;
+    touch-action: manipulation;
+  }
+
+  /* 16:9 アスペクト比固定 メインコンテナ */
+  #game-container {
+    position: relative;
+    width: 96vw;
+    height: 54vw;
+    max-width: 1200px;
+    max-height: 675px;
+    background: #1e293b;
+    border-radius: 18px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 25px rgba(250, 204, 21, 0.22);
+    border: 1px solid #475569;
+    overflow: hidden;
+  }
+
+  #track-container {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+  }
+
+  .track-tile {
+    position: absolute;
+    width: clamp(26px, 3.2vw, 36px);
+    height: clamp(26px, 3.2vw, 36px);
+    background: #ffffff;
+    border: 2px solid #94a3b8;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: clamp(9px, 1.1vw, 11px);
+    font-weight: bold;
+    color: #334155;
+    transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s, color 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    transform: translate(-50%, -50%);
+  }
+
+  @keyframes tilePop {
+    0% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.4); box-shadow: 0 0 18px rgba(74, 222, 128, 0.9); z-index: 30; }
+    100% { transform: translate(-50%, -50%) scale(1); }
+  }
+  .tile-pop {
+    animation: tilePop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .track-tile.active-green {
+    background: #4ade80;
+    border-color: #16a34a;
+    color: #052e16;
+    box-shadow: 0 0 10px rgba(74, 222, 128, 0.7);
+  }
+  .track-tile.active-yellow {
+    background: #facc15;
+    border-color: #ca8a04;
+    color: #422006;
+    box-shadow: 0 0 16px rgba(250, 204, 21, 0.95);
+  }
+  .track-tile.active-orbit {
+    background: #fde047 !important;
+    border-color: #eab308 !important;
+    color: #422006 !important;
+    box-shadow: 0 0 20px rgba(253, 224, 71, 1) !important;
+    transform: translate(-50%, -50%) scale(1.3) !important;
+    z-index: 25;
+  }
+  .track-tile.start-tile {
+    background: #38bdf8;
+    border-color: #0284c7;
+    color: #ffffff;
+    font-size: clamp(8px, 1vw, 10px);
+  }
+  .track-tile.goal-tile {
+    background: #f87171;
+    border-color: #dc2626;
+    color: #ffffff;
+    font-size: clamp(8px, 1vw, 10px);
+    animation: pulse-goal 1.5s infinite;
+  }
+
+  @keyframes pulse-goal {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.12); }
+  }
+
+  #main-content {
+    position: absolute;
+    top: clamp(38px, 8.2%, 60px);
+    left: clamp(38px, 8.2%, 60px);
+    right: clamp(38px, 8.2%, 60px);
+    bottom: clamp(38px, 8.2%, 60px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: clamp(6px, 1.2vw, 12px) clamp(10px, 1.8vw, 18px);
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid #cbd5e1;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.02);
+  }
+
+  #header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: clamp(4px, 1vw, 12px);
+    flex-wrap: nowrap;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: clamp(4px, 0.8vw, 10px);
+    flex-shrink: 0;
+    min-width: 0;
+  }
+  .stat-box {
+    font-size: clamp(11px, 1.3vw, 15px);
+    font-weight: 700;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    padding: 4px clamp(6px, 1.2vw, 14px);
+    border-radius: 20px;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: transform 0.15s;
+  }
+  #level-badge {
+    color: #854d0e;
+    background: #fef9c3;
+    border-color: #fde047;
+  }
+  #stage-display { 
+    color: #2563eb; 
+    flex-shrink: 0;
+    min-width: max-content;
+  }
+  #points-display { color: #d97706; background: #fffbe6; border-color: #fde68a; flex-shrink: 0; }
+  #points-display.rolling {
+    transform: scale(1.1);
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #b45309;
+  }
+  #timer-display { color: #b45309; font-size: clamp(12px, 1.4vw, 16px); background: #fffbe6; border-color: #fde68a; flex-shrink: 0; }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sound-btn {
+    cursor: pointer;
+    font-size: clamp(10px, 1.1vw, 13px);
+    font-weight: bold;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    padding: 4px clamp(6px, 1vw, 12px);
+    border-radius: 20px;
+    transition: all 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .sound-btn:hover { background: #e2e8f0; }
+
+  #workspace {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    gap: clamp(8px, 1.5vw, 16px);
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* 左側：作文問題リスト (5行) */
+  #sentence-list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(4px, 0.9vw, 9px);
+    justify-content: center;
+    height: 100%;
+    min-width: 0;
+  }
+  .sentence-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: clamp(5px, 0.8vw, 9px) clamp(8px, 1.2vw, 14px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    min-width: 0;
+    transition: background-color 0.25s, border-color 0.25s;
+  }
+  .sentence-row.row-solved {
+    background: #f0fdf4;
+    border-color: #86efac;
+  }
+
+  .sentence-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    color: #1e293b;
+    font-size: clamp(13px, 1.5vw, 17px);
+    font-weight: 700;
+    line-height: 1.4;
+    padding-right: 8px;
+    min-width: 0;
+  }
+
+  .sentence-part {
+    white-space: nowrap;
+  }
+
+  /* 言葉を入れるドロップ枠 */
+  .word-drop-slot {
+    min-width: clamp(78px, 9.5vw, 120px);
+    height: clamp(32px, 3.8vw, 42px);
+    border: 2px dashed #eab308;
+    border-radius: 8px;
+    background: #fefce8;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-sizing: border-box;
+    padding: 0 6px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .word-drop-slot:hover {
+    background: #fef9c3;
+    border-color: #ca8a04;
+  }
+  .word-drop-slot.filled {
+    border-style: solid;
+    border-color: #10b981;
+    background: #ecfdf5;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.35);
+    padding: 0;
+  }
+  .word-drop-slot.filled .hint-text {
+    display: none;
+  }
+
+  .hint-text {
+    position: absolute;
+    color: #ca8a04;
+    opacity: 0.55;
+    font-size: clamp(13px, 1.5vw, 16px);
+    font-weight: 800;
+    pointer-events: none;
+    z-index: 1;
+    user-select: none;
+  }
+
+  .row-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .pos-tag {
+    font-size: clamp(9px, 0.95vw, 11px);
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+    white-space: nowrap;
+  }
+
+  .hint-btn {
+    height: clamp(28px, 3.2vw, 34px);
+    padding: 0 clamp(7px, 0.9vw, 10px);
+    border-radius: 8px;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    color: #b45309;
+    font-size: clamp(10px, 1.05vw, 12px);
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: all 0.2s;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .hint-btn:hover:not(:disabled) {
+    background: #fde68a;
+    transform: translateY(-1px);
+  }
+  .hint-btn.used {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #94a3b8;
+    cursor: default;
+  }
+
+  /* 右側：ことばカード置き場 */
+  #card-pool-container {
+    width: clamp(165px, 22vw, 240px);
+    height: 100%;
+    max-height: 410px;
+    background: #fffbeb;
+    border: 2px dashed #facc15;
+    border-radius: 12px;
+    padding: clamp(6px, 1vw, 10px);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    flex-shrink: 0;
+  }
+
+  .pool-title {
+    font-size: clamp(10px, 1.05vw, 12px);
+    font-weight: 800;
+    color: #854d0e;
+    text-align: center;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  #card-pool {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(6px, 1vw, 10px);
+    overflow-y: auto;
+    padding: 4px;
+  }
+
+  .pool-slot {
+    width: 92%;
+    min-height: clamp(34px, 4vw, 44px);
+    border: 1px dashed #eab308;
+    border-radius: 9px;
+    background: #fefce8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .word-card {
+    width: 100%;
+    height: 100%;
+    min-height: clamp(32px, 3.8vw, 42px);
+    padding: 0 10px;
+    background: linear-gradient(135deg, #ffffff, #fef9c3);
+    color: #1e293b;
+    font-size: clamp(13px, 1.5vw, 17px);
+    font-weight: 800;
+    border: 1.5px solid #eab308;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(202, 138, 4, 0.15);
+    cursor: grab;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    touch-action: none;
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative;
+    z-index: 2;
+    white-space: nowrap;
+  }
+  .word-card:active { cursor: grabbing; transform: scale(1.05); }
+  .word-card.selected {
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(234, 179, 8, 0.7);
+    outline: 3px solid #f59e0b;
+    background: #fef08a;
+  }
+  .word-card.correct {
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    color: #15803d;
+    border-color: #22c55e;
+    cursor: default;
+    box-shadow: none;
+    width: 100%;
+    height: 100%;
+  }
+
+  .modal-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.78);
+    backdrop-filter: blur(6px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    animation: fadeIn 0.3s ease-out;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #0f172a;
+    padding: 28px 36px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+    max-width: 440px;
+    width: 88%;
+  }
+  .modal-card h2 { font-size: 26px; margin-bottom: 12px; color: #ef4444; }
+  .modal-card h2.win { color: #10b981; }
+  .modal-card p { color: #475569; font-size: 15px; margin-bottom: 20px; line-height: 1.5; }
+
+  .stage-clear-banner {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #ffffff;
+    padding: 24px 32px;
+    border-radius: 20px;
+    box-shadow: 0 15px 30px rgba(16, 185, 129, 0.35);
+    text-align: center;
+    animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  @keyframes bounceIn {
+    0% { transform: scale(0.7); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .stage-clear-banner h2 { color: #ffffff; font-size: 28px; margin-bottom: 8px; }
+  .stage-clear-banner p { color: #ecfdf5; font-size: 16px; margin-bottom: 0; }
+
+  /* スタート画面（黄色ネオン仕様） */
+  .start-hero-card {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #422006 100%);
+    border: 2px solid #facc15;
+    color: #ffffff;
+    padding: 22px 24px;
+    border-radius: 24px;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(250, 204, 21, 0.35), inset 0 0 24px rgba(250, 204, 21, 0.25);
+    max-width: 490px;
+    width: 92%;
+    position: relative;
+    overflow: hidden;
+  }
+  .start-hero-card::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(250, 204, 21, 0.16) 0%, transparent 70%);
+    pointer-events: none;
+    animation: pulseBg 4s infinite alternate;
+  }
+  @keyframes pulseBg {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    100% { transform: scale(1.2); opacity: 1; }
+  }
+
+  .puzzle-piece-container {
+    width: 82px;
+    height: 82px;
+    margin: 0 auto 6px auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    filter: drop-shadow(0 0 18px rgba(250, 204, 21, 0.9));
+    animation: pieceFloat 3s ease-in-out infinite alternate;
+  }
+  @keyframes pieceFloat {
+    0% { transform: translateY(0) rotate(0deg); }
+    100% { transform: translateY(-7px) rotate(5deg); }
+  }
+
+  .start-hero-title {
+    font-family: 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN', 'Rounded Mplus 1c', sans-serif;
+    font-size: clamp(28px, 4.2vw, 38px);
+    font-weight: 900;
+    letter-spacing: 3px;
+    background: linear-gradient(135deg, #fef08a, #facc15, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 14px rgba(250, 204, 21, 0.6));
+    margin-bottom: 6px;
+  }
+  .start-hero-badge {
+    display: inline-block;
+    padding: 3px 14px;
+    background: rgba(250, 204, 21, 0.18);
+    border: 1px solid #fde047;
+    border-radius: 20px;
+    color: #fef08a;
+    font-size: 11px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+  }
+  .start-hero-desc {
+    color: #f8fafc;
+    font-size: clamp(12px, 1.4vw, 14px);
+    line-height: 1.55;
+    margin-bottom: 14px;
+  }
+
+  /* 学年コース選択ボタン */
+  .grade-selector {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    position: relative;
+    z-index: 2;
+  }
+  .grade-btn {
+    flex: 1;
+    padding: 10px 8px;
+    border-radius: 14px;
+    border: 2px solid rgba(250, 204, 21, 0.4);
+    background: rgba(15, 23, 42, 0.75);
+    color: #cbd5e1;
+    font-size: clamp(13px, 1.5vw, 15px);
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .grade-btn:hover {
+    border-color: #fde047;
+    color: #fef08a;
+  }
+  .grade-btn.active {
+    background: linear-gradient(135deg, #facc15, #eab308);
+    border-color: #fef08a;
+    color: #422006;
+    box-shadow: 0 0 18px rgba(250, 204, 21, 0.8);
+    transform: translateY(-2px);
+  }
+
+  .start-play-btn {
+    position: relative;
+    z-index: 2;
+    background: linear-gradient(135deg, #fde047, #f59e0b);
+    color: #422006;
+    font-size: 17px;
+    font-weight: 900;
+    padding: 12px 32px;
+    border: 2px solid #fef9c3;
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 8px 25px rgba(250, 204, 21, 0.55), 0 0 18px rgba(245, 158, 11, 0.6);
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    letter-spacing: 1px;
+  }
+  .start-play-btn:hover:not(:disabled) {
+    transform: scale(1.06) translateY(-2px);
+    box-shadow: 0 12px 30px rgba(250, 204, 21, 0.8), 0 0 25px rgba(253, 224, 71, 0.9);
+  }
+  .start-play-btn:disabled {
+    background: #334155;
+    border-color: #475569;
+    color: #94a3b8;
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.65;
+  }
+  .start-action-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 2;
+  }
+  .resume-play-btn {
+    background: linear-gradient(135deg, #38bdf8, #0284c7);
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 800;
+    padding: 12px 24px;
+    border: 2px solid #bae6fd;
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(56, 189, 248, 0.45);
+    transition: all 0.2s ease;
+  }
+  .resume-play-btn:hover {
+    transform: scale(1.05) translateY(-2px);
+    box-shadow: 0 10px 25px rgba(56, 189, 248, 0.7);
+  }
+
+  /* STAGE 〇 ズームイン演出（黄色ネオン仕様） */
+  #stage-zoom-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.88);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    padding: 0 20px;
+    box-sizing: border-box;
+  }
+  #stage-zoom-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .stage-zoom-text {
+    font-size: clamp(28px, 6.5vw, 72px);
+    font-weight: 900;
+    font-style: italic;
+    color: #ffffff;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, #fef9c3, #facc15, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 22px rgba(250, 204, 21, 0.85));
+    transform: scale(0);
+    white-space: nowrap;
+    max-width: 100%;
+    text-align: center;
+  }
+  .stage-zoom-text.animate {
+    animation: stageZoomIn 1.1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+  @keyframes stageZoomIn {
+    0% { transform: scale(0.1); opacity: 0; }
+    50% { transform: scale(1.1); opacity: 1; }
+    80% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1.05); opacity: 0; }
+  }
+
+  /* ゴールボーナス専用ダイアログ演出 */
+  .bonus-banner {
+    background: linear-gradient(135deg, #f59e0b, #d97706, #b45309);
+    border: 3px solid #fef08a;
+    color: #ffffff;
+    padding: 28px 36px;
+    border-radius: 24px;
+    box-shadow: 0 0 50px rgba(245, 158, 11, 0.8), inset 0 0 20px rgba(254, 240, 138, 0.4);
+    text-align: center;
+    animation: bonusPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-width: 480px;
+    width: 90%;
+  }
+  @keyframes bonusPop {
+    0% { transform: scale(0.3) rotate(-5deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  .bonus-banner h2 {
+    font-size: clamp(26px, 3.8vw, 34px);
+    font-weight: 900;
+    margin-bottom: 12px;
+    text-shadow: 0 3px 6px rgba(0,0,0,0.4);
+    color: #fffde7;
+  }
+  .bonus-amount {
+    font-size: clamp(36px, 5vw, 52px);
+    font-weight: 900;
+    color: #fef08a;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    margin: 10px 0;
+    letter-spacing: 2px;
+  }
+
+  /* 特別ボーナスステージ（黄色ネオン＋言葉パネル選択仕様） */
+  .special-stage-container {
+    background: linear-gradient(135deg, #0f172a, #272008);
+    border: 2px solid #facc15;
+    border-radius: 20px;
+    padding: 16px clamp(12px, 2vw, 24px);
+    width: 94%;
+    max-width: 920px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.85), 0 0 35px rgba(250, 204, 21, 0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .special-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    color: #ffffff;
+    border-bottom: 1px solid #854d0e;
+    padding-bottom: 10px;
+  }
+  .special-instruction {
+    font-size: clamp(18px, 2.4vw, 26px);
+    font-weight: 900;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+  }
+  .theme-highlight {
+    color: #38bdf8;
+    text-shadow: 0 0 14px rgba(56, 189, 248, 0.85);
+    font-size: 1.08em;
+  }
+  .special-status-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .special-count-box {
+    background: rgba(250, 204, 21, 0.2);
+    border: 1.5px solid #facc15;
+    padding: 5px 14px;
+    border-radius: 12px;
+    font-size: clamp(14px, 1.8vw, 18px);
+    font-weight: 800;
+    color: #fef9c3;
+    white-space: nowrap;
+  }
+  .special-timer {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1.5px solid #f87171;
+    padding: 5px 14px;
+    border-radius: 12px;
+    font-size: clamp(14px, 1.8vw, 18px);
+    font-weight: 800;
+    color: #fecaca;
+    white-space: nowrap;
+  }
+  .special-title {
+    font-size: clamp(15px, 2vw, 20px);
+    font-weight: 900;
+    color: #fde047;
+    text-shadow: 0 0 10px rgba(250, 204, 21, 0.6);
+    letter-spacing: 1px;
+  }
+  .special-theme-box {
+    background: rgba(250, 204, 21, 0.18);
+    border: 1.5px solid #facc15;
+    padding: 6px 14px;
+    border-radius: 12px;
+    font-size: clamp(13px, 1.6vw, 17px);
+    font-weight: 800;
+    color: #fef9c3;
+  }
+  .special-timer {
+    font-size: clamp(15px, 1.9vw, 19px);
+    font-weight: bold;
+    color: #f87171;
+  }
+
+  /* 言葉パネル用グリッド（5列×5行＝25枚から正解10個を探す） */
+  .special-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: clamp(6px, 1vw, 10px);
+    width: 100%;
+    max-width: 840px;
+    aspect-ratio: 8 / 3.8;
+  }
+  .special-panel {
+    background: linear-gradient(135deg, #1e293b, #334155);
+    border: 1.5px solid #64748b;
+    border-radius: 10px;
+    color: #f8fafc;
+    font-size: clamp(13px, 1.7vw, 19px);
+    font-weight: 800;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 4px;
+    cursor: pointer;
+    transition: transform 0.1s, background-color 0.2s, border-color 0.2s;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+  }
+  .special-panel:hover {
+    transform: scale(1.04);
+    border-color: #fde047;
+    box-shadow: 0 0 12px rgba(250, 204, 21, 0.5);
+  }
+  .special-panel.hit {
+    background: linear-gradient(135deg, #15803d, #22c55e) !important;
+    border-color: #86efac !important;
+    color: #ffffff !important;
+    cursor: default;
+    transform: scale(0.96);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.4);
+  }
+  .special-panel.miss {
+    background: linear-gradient(135deg, #991b1b, #ef4444) !important;
+    border-color: #fca5a5 !important;
+    animation: shake 0.3s;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+
+  .modal-btns { display: flex; gap: 12px; justify-content: center; }
+  .btn {
+    padding: 10px 22px; font-size: 14px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-retry { background: #10b981; color: #fff; }
+  .btn-quit { background: #64748b; color: #fff; }
+  .btn-next { background: #eab308; color: #422006; font-weight: 800; }
+
+  #confetti-canvas {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 90;
+  }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <canvas id="confetti-canvas"></canvas>
+  <div id="track-container"></div>
+
+  <!-- STAGE 〇 ズームイン演出用オーバーレイ -->
+  <div id="stage-zoom-overlay">
+    <div id="stage-zoom-text" class="stage-zoom-text">STAGE 1</div>
+  </div>
+
+  <div id="main-content">
+    <div id="header">
+      <div class="header-left">
+        <div class="stat-box" id="level-badge">中学年</div>
+        <div class="stat-box" id="stage-display">🚩 STAGE 1</div>
+        <div class="stat-box" id="points-display">⭐ 0 pt</div>
+      </div>
+      <div class="stat-box" id="timer-display">⏱ 2:00</div>
+      <div class="header-right">
+        <button class="sound-btn" onclick="openCourseMenu()">コース変更</button>
+        <button class="sound-btn" id="sound-btn" onclick="toggleSound()">🔊 ON</button>
+      </div>
+    </div>
+
+    <div id="workspace">
+      <!-- 左側：作文穴埋め問題リスト (5行) -->
+      <div id="sentence-list"></div>
+
+      <!-- 右側：ことばカード置き場 -->
+      <div id="card-pool-container">
+        <div class="pool-title">ことばカード (スワイプ)</div>
+        <div id="card-pool" ondragover="allowDrop(event)" ondrop="dropToPool(event)"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 長押しやコンテキストメニュー表示を画面全体で一括無効化
+document.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  return false;
+});
+
+// 二本指タップ等による不要なジェスチャーやズーム動作を阻止
+document.addEventListener('touchstart', (e) => {
+  if (e.touches.length > 1) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
+/**
+ * 学年別 作文穴埋め問題データベース（低・中・高 各200問）
+ * before: 空欄の前の文 / answer: 正解の言葉 / after: 空欄の後の文 / pos: 品詞・表現分類
+ */
+const SENTENCE_DATABASE = {
+  // 【低学年】小学1〜2年生向け（200問・すべてひらがな／カタカナ／数字表記・漢字ゼロ）
+  low: [
+    { before: "あめが ", answer: "ざあざあ", after: " ふってきた。", pos: "副詞" },
+    { before: "かえるが くさむらに ", answer: "ぴょんと", after: " とびこんだ。", pos: "副詞" },
+    { before: "おほしさまが そらで ", answer: "きらきら", after: " ひかっている。", pos: "副詞" },
+    { before: "あかちゃんが ", answer: "すやすや", after: " ねむっている。", pos: "副詞" },
+    { before: "かぜが ", answer: "そよそよ", after: " ふいて きもちいい。", pos: "副詞" },
+    { before: "あつい ひに ", answer: "つめたい", after: " ジュースを のんだ。", pos: "形容詞" },
+    { before: "テストで 100てんを とって ", answer: "うれしい", after: "。", pos: "形容詞" },
+    { before: "この にもつは とても ", answer: "おもい", after: "。", pos: "形容詞" },
+    { before: "はるに なると ", answer: "あたたかい", after: " かぜが ふく。", pos: "形容詞" },
+    { before: "こうえんの ブランコで たのしく ", answer: "あそんだ", after: "。", pos: "動詞" },
+    { before: "あさ おきたら おおきな こえで ", answer: "あいさつした", after: "。", pos: "動詞" },
+    { before: "うんどうかいで いっとうしょうを めざして ", answer: "はしった", after: "。", pos: "動詞" },
+    { before: "ともだちに えほんを ", answer: "かしてあげた", after: "。", pos: "動詞" },
+    { before: "おなかが すいたので ごはんを ", answer: "たべた", after: "。", pos: "動詞" },
+    { before: "みずたまりを ", answer: "ぽちゃんと", after: " ふんでしまった。", pos: "副詞" },
+    { before: "いぬが しっぽを ", answer: "うれしそうに", after: " ふっている。", pos: "副詞" },
+    { before: "はじめての はっぴょうで むねが ", answer: "どきどき", after: " する。", pos: "副詞" },
+    { before: "おふろに はいって からだが ", answer: "ぽかぽか", after: " になった。", pos: "副詞" },
+    { before: "ゆきが ", answer: "しんしんと", after: " ふりつもる。", pos: "副詞" },
+    { before: "くろい くもが でて そらが ", answer: "くらい", after: "。", pos: "形容詞" },
+    { before: "すいかを たべたら とても ", answer: "あまい", after: " あじがした。", pos: "形容詞" },
+    { before: "おもしろい おはなしを きいて ", answer: "わらった", after: "。", pos: "動詞" },
+    { before: "いえに かえったら すぐに てを ", answer: "あらった", after: "。", pos: "動詞" },
+    { before: "ちいさな ありを じっと ", answer: "みつめた", after: "。", pos: "動詞" },
+    { before: "くつを ", answer: "ぴかぴかに", after: " みがいた。", pos: "副詞" },
+    { before: "おおきな パンを ", answer: "もぐもぐ", after: " たべる。", pos: "副詞" },
+    { before: "ちょうちょが ", answer: "ひらひら", after: " とんでいる。", pos: "副詞" },
+    { before: "ねむくて ", answer: "うとうと", after: " してしまう。", pos: "副詞" },
+    { before: "かめが ", answer: "のそのそ", after: " あるいている。", pos: "副詞" },
+    { before: "この りんごは ほっぺが おちるほど ", answer: "おいしい", after: "。", pos: "形容詞" },
+    { before: "そらの いろが どこまでも ", answer: "あおい", after: "。", pos: "形容詞" },
+    { before: "ふゆの あさは いきが しろくて ", answer: "さむい", after: "。", pos: "形容詞" },
+    { before: "きりんの くびは とても ", answer: "ながい", after: "。", pos: "形容詞" },
+    { before: "こいぬの けは ", answer: "ふわふわ", after: " している。", pos: "副詞" },
+    { before: "がっこうの プールで げんきに ", answer: "およいだ", after: "。", pos: "動詞" },
+    { before: "おんがくに あわせて たのしく ", answer: "うたった", after: "。", pos: "動詞" },
+    { before: "クレヨンで おおきな えを ", answer: "かいた", after: "。", pos: "動詞" },
+    { before: "せんせいに わかりやすい じで てがみを ", answer: "おくった", after: "。", pos: "動詞" },
+    { before: "あさがおの たねに まいにち みずを ", answer: "あげた", after: "。", pos: "動詞" },
+    { before: "ころんで ひざを すりむいて ", answer: "いたい", after: "。", pos: "形容詞" },
+    { before: "おまつりへ いくのが とても ", answer: "たのしみだ", after: "。", pos: "形容動詞" },
+    { before: "とけいの はりが ", answer: "チクタク", after: " うごく。", pos: "副詞" },
+    { before: "おなかが すいて ", answer: "ぐうぐう", after: " なった。", pos: "副詞" },
+    { before: "たいこが ", answer: "ドンドン", after: " なる。", pos: "副詞" },
+    { before: "ともだちと なかよく てを ", answer: "つないだ", after: "。", pos: "動詞" },
+    { before: "ほんだなから すきな ほんを ", answer: "えらんだ", after: "。", pos: "動詞" },
+    { before: "でんしゃの まどから けしきを ", answer: "ながめた", after: "。", pos: "動詞" },
+    { before: "おてつだいをして おかあさんに ", answer: "ほめられた", after: "。", pos: "動詞" },
+    { before: "あしたの えんそくが ", answer: "まちどおしい", after: "。", pos: "形容詞" },
+    { before: "こおりを さわったら とても ", answer: "つめたかった", after: "。", pos: "形容詞" },
+    { before: "こねこが ", answer: "にゃあにゃあ", after: " ないている。", pos: "副詞" },
+    { before: "おふろの おゆが ", answer: "あつい", after: " ので みずを いれた。", pos: "形容詞" },
+    { before: "でんしゃが ", answer: "ガタンゴトン", after: " はしっていく。", pos: "副詞" },
+    { before: "おべんとうを ぜんぶ たべて ", answer: "まんぞくだ", after: "。", pos: "形容動詞" },
+    { before: "はなびが よぞらに ", answer: "ドーンと", after: " あがった。", pos: "副詞" },
+    { before: "たくさん はしったので のどが ", answer: "かわいた", after: "。", pos: "動詞" },
+    { before: "やまの てっぺんから おおきな こえで ", answer: "さけんだ", after: "。", pos: "動詞" },
+    { before: "ふうせんが そらへ ", answer: "ふわふわと", after: " とんでいった。", pos: "副詞" },
+    { before: "かみのけを ", answer: "さらさらに", after: " とかした。", pos: "副詞" },
+    { before: "おとうとが ころんだので ", answer: "たすけてあげた", after: "。", pos: "動詞" },
+    { before: "あたらしい くつを はいて ", answer: "うれしかった", after: "。", pos: "形容詞" },
+    { before: "みずを こぼしたので ぞうきんで ", answer: "ふいた", after: "。", pos: "動詞" },
+    { before: "そらが はれて たいようが ", answer: "まぶしい", after: "。", pos: "形容詞" },
+    { before: "ケーキの クリームが とても ", answer: "ふわふわだ", after: "。", pos: "形容動詞" },
+    { before: "すべりだいを ", answer: "すーっと", after: " すべりおりた。", pos: "副詞" },
+    { before: "おとうさんと いっしょに キャッチボールを ", answer: "した", after: "。", pos: "動詞" },
+    { before: "まいにち はを ", answer: "みがいて", after: " むしばを ふせぐ。", pos: "動詞" },
+    { before: "ちいさな こえで ", answer: "ひそひそと", after: " はなす。", pos: "副詞" },
+    { before: "こおりの うえで あしを ", answer: "すべらせた", after: "。", pos: "動詞" },
+    { before: "ひろい こうえんで おにごっこをして ", answer: "はしりまわった", after: "。", pos: "動詞" },
+    { before: "はなが きれいに ", answer: "さいて", after: " いい においがする。", pos: "動詞" },
+    { before: "にじが そらに ", answer: "くっきりと", after: " でている。", pos: "副詞" },
+    { before: "おふとんが ほしたてで ", answer: "ふかふかだ", after: "。", pos: "形容動詞" },
+    { before: "カレーが からくて みずを ", answer: "ごくりと", after: " のんだ。", pos: "副詞" },
+    { before: "じょうずに おりがみを ", answer: "おった", after: "。", pos: "動詞" },
+    { before: "やまみちを ", answer: "ゆっくりと", after: " あるいた。", pos: "副詞" },
+    { before: "なわとびを 100かい ", answer: "とべた", after: "。", pos: "動詞" },
+    { before: "おへやを きれいに ", answer: "かたづけた", after: "。", pos: "動詞" },
+    { before: "おにぎりを おいしそうに ", answer: "ほおばった", after: "。", pos: "動詞" },
+    { before: "あめあがりの そらが ", answer: "すっきり", after: " はれた。", pos: "副詞" },
+    { before: "こいしが いけに ", answer: "ぽちゃんと", after: " おちた。", pos: "副詞" },
+    { before: "ゆきだるまを ", answer: "まるく", after: " つくった。", pos: "形容詞" },
+    { before: "おはなしを さいごまで ", answer: "きいた", after: "。", pos: "動詞" },
+    { before: "くもが そらに ", answer: "ぷかぷか", after: " うかんでいる。", pos: "副詞" },
+    { before: "レモンを たべたら とても ", answer: "すっぱかった", after: "。", pos: "形容詞" },
+    { before: "えんぴつを けずって さきを ", answer: "とがらせた", after: "。", pos: "動詞" },
+    { before: "おおきな にもつを ", answer: "よいしょと", after: " もちあげた。", pos: "副詞" },
+    { before: "すずしい かぜが ほおに ", answer: "あたった", after: "。", pos: "動詞" },
+    { before: "まどから おつきさまを ", answer: "みあげた", after: "。", pos: "動詞" },
+    { before: "おみずを たくさん ", answer: "のんだ", after: "。", pos: "動詞" },
+    { before: "かばんの なかを ", answer: "せいりした", after: "。", pos: "動詞" },
+    { before: "とりが そらを ", answer: "きもちよさそうに", after: " とんでいる。", pos: "副詞" },
+    { before: "おたんじょうびの プレゼントを ", answer: "もらった", after: "。", pos: "動詞" },
+    { before: "つみきを たかく ", answer: "つみあげた", after: "。", pos: "動詞" },
+    { before: "おおきな いぬに ちょっと ", answer: "びっくりした", after: "。", pos: "動詞" },
+    { before: "あさがおの つぼみが ", answer: "ふくらんだ", after: "。", pos: "動詞" },
+    { before: "すなばで おやまを ", answer: "つくった", after: "。", pos: "動詞" },
+    { before: "おほしさまが たくさん ", answer: "みえた", after: "。", pos: "動詞" },
+    { before: "きょうは とても ", answer: "いいてんきだ", after: "。", pos: "形容動詞" },
+    { before: "みずうみの みずが ", answer: "すきとおって", after: " きれいだ。", pos: "動詞" },
+    { before: "あたらしい ランドセルを ", answer: "せおった", after: "。", pos: "動詞" },
+    { before: "おまつりのかねが ", answer: "カーンと", after: " ひびいた。", pos: "副詞" },
+    { before: "すなはまで きれいな かいがらを ", answer: "ひろった", after: "。", pos: "動詞" },
+    { before: "こいぬが おいしそうに ミルクを ", answer: "なめた", after: "。", pos: "動詞" },
+    { before: "おへやの でんきを ", answer: "ぱちっと", after: " つけた。", pos: "副詞" },
+    { before: "はるに なって さくらが ", answer: "まんかいに", after: " なった。", pos: "形容動詞" },
+    { before: "ともだちの わすれものを ", answer: "とどけてあげた", after: "。", pos: "動詞" },
+    { before: "おおきな たいこを ", answer: "ちからいっぱい", after: " たたいた。", pos: "副詞" },
+    { before: "はたけで おおきな だいこんを ", answer: "ぬいた", after: "。", pos: "動詞" },
+    { before: "なつの よるに ほたるが ", answer: "ふわりと", after: " とんだ。", pos: "副詞" },
+    { before: "あつあつの おでんを ", answer: "ふうふう", after: " さまして たべる。", pos: "副詞" },
+    { before: "かぜが つよくて ぼうしが ", answer: "とばされた", after: "。", pos: "動詞" },
+    { before: "こおりの うえで ペンギンが ", answer: "よちよち", after: " あるく。", pos: "副詞" },
+    { before: "おしろの ような おおきな いえを ", answer: "みつけた", after: "。", pos: "動詞" },
+    { before: "あめの ひに ながぐつで ", answer: "ぴちゃぴちゃ", after: " あるく。", pos: "副詞" },
+    { before: "テストの もんだいを ", answer: "よくよんで", after: " こたえた。", pos: "動詞" },
+    { before: "おとうさんと いっしょに つりを ", answer: "たのしんだ", after: "。", pos: "動詞" },
+    { before: "ゆうやけの そらが ", answer: "オレンジいろに", after: " そまった。", pos: "名詞" },
+    { before: "でんわの ベルが ", answer: "リンリンと", after: " なった。", pos: "副詞" },
+    { before: "すいぞくかんで イルカが ", answer: "たかく", after: " ジャンプした。", pos: "形容詞" },
+    { before: "あさに おきて かおを あらって ", answer: "さっぱりした", after: " 。", pos: "副詞" },
+    { before: "こどもの ひに こいのぼりが ", answer: "げんきよく", after: " およぐ。", pos: "副詞" },
+    { before: "おいしい ケーキを みんなで ", answer: "わけあった", after: "。", pos: "動詞" },
+    { before: "ねんどで かわいい どうぶつを ", answer: "こねて", after: " つくった。", pos: "動詞" },
+    { before: "ふゆに なって ゆきが ", answer: "ちらちら", after: " ふってきた。", pos: "副詞" },
+    { before: "じてんしゃに のる れんしゅうを ", answer: "がんばった", after: "。", pos: "動詞" },
+    { before: "おまつりの たいこに あわせて ", answer: "おどった", after: "。", pos: "動詞" },
+    { before: "くつひもが ほどけたので ", answer: "むすびなおした", after: "。", pos: "動詞" },
+    { before: "あさがおが まいにち ひとつずつ ", answer: "さいた", after: "。", pos: "動詞" },
+    { before: "おおきな こえで こうかを ", answer: "うたった", after: "。", pos: "動詞" },
+    { before: "おふろの あとに ", answer: "つめたい", after: " むぎちゃを のんだ。", pos: "形容詞" },
+    { before: "もりの なかで どんぐりを ", answer: "たくさん", after: " ひろった。", pos: "副詞" },
+    { before: "かみひこうきを そらへ ", answer: "とおくまで", after: " とばした。", pos: "副詞" },
+    { before: "おかしを たべすぎて おなかが ", answer: "いっぱいだ", after: "。", pos: "形容動詞" },
+    { before: "かみのけを みじかく ", answer: "きって", after: " すっきりした。", pos: "動詞" },
+    { before: "はなびたいかいで きれいな はなびを ", answer: "みた", after: "。", pos: "動詞" },
+    { before: "おてがみに おへんじを ", answer: "かいて", after: " ポストに いれた。", pos: "動詞" },
+    { before: "いけの こいに えさを ", answer: "まいて", after: " あげた。", pos: "動詞" },
+    { before: "あめの おとが ゆめの なかで ", answer: "きこえた", after: "。", pos: "動詞" },
+    { before: "かばんに きょうかしょを ", answer: "じゅんばんに", after: " いれた。", pos: "副詞" },
+    { before: "こおりが とけて ", answer: "ちょろちょろ", after: " ながれた。", pos: "動詞" },
+    { before: "おとうとと いっしょに ブロックで ", answer: "あそんだ", after: "。", pos: "動詞" },
+    { before: "かぜが ふいて はっぱが ", answer: "かさかさと", after: " おとを たてた。", pos: "副詞" },
+    { before: "すべりだいの うえから ともだちに ", answer: "てをふった", after: "。", pos: "表現" },
+    { before: "おしょうがつに たこあげを ", answer: "した", after: "。", pos: "動詞" },
+    { before: "トマトが まっかに ", answer: "うれて", after: " おいしそうだ。", pos: "動詞" },
+    { before: "よるに なって まちの あかりが ", answer: "ともった", after: "。", pos: "動詞" },
+    { before: "うみの なみが ", answer: "ザブーンと", after: " うちよせる。", pos: "副詞" },
+    { before: "すずめの おやこが ", answer: "チュンチュン", after: " ないている。", pos: "副詞" },
+    { before: "おおきな スイカを ほうちょうで ", answer: "ぱかっと", after: " わった。", pos: "副詞" },
+    { before: "あさごはんの パンが ", answer: "こんがり", after: " やけた。", pos: "副詞" },
+    { before: "にわの くさを ", answer: "ていねいに", after: " ぬいた。", pos: "副詞" },
+    { before: "おふとんに はいって ", answer: "ぐっすり", after: " ねむった。", pos: "副詞" },
+    { before: "えんそくの おやつを ", answer: "たのしみに", after: " もっていく。", pos: "副詞" },
+    { before: "かえるが はっぱの うえで ", answer: "ひとやすみ", after: " している。", pos: "名詞" },
+    { before: "ピアノの おとが ", answer: "きれいに", after: " ひびいた。", pos: "形容動詞" },
+    { before: "おみずを じょうろに ", answer: "たっぷり", after: " いれた。", pos: "副詞" },
+    { before: "ふうりんが かぜに ゆれて ", answer: "チリンと", after: " なった。", pos: "副詞" },
+    { before: "あかちゃんが おもちゃを ", answer: "にぎって", after: " わらった。", pos: "動詞" },
+    { before: "やまの うえの くうきは ", answer: "おいしかった", after: "。", pos: "形容詞" },
+    { before: "まどガラスを ぞうきんで ", answer: "キュッキュッと", after: " ふいた。", pos: "副詞" },
+    { before: "おたんじょうびケーキの ろうそくを ", answer: "ふきけした", after: "。", pos: "動詞" },
+    { before: "あめの ひは いえの なかで ", answer: "しずかに", after: " すごす。", pos: "名詞" },
+    { before: "かめが こうらから あたまを ", answer: "ひょっこり", after: " だした。", pos: "副詞" },
+    { before: "おにぎりの なかに うめぼしが ", answer: "はいっていた", after: "。", pos: "動詞" },
+    { before: "ともだちと やくそくの じかんに ", answer: "あつまった", after: "。", pos: "動詞" },
+    { before: "すなばで おおきな トンネルを ", answer: "ほった", after: "。", pos: "動詞" },
+    { before: "そらを とぶ ひこうきが ", answer: "ちいさく", after: " みえた。", pos: "形容詞" },
+    { before: "おふろで からだを ", answer: "しっかり", after: " あらった。", pos: "副詞" },
+    { before: "はるの のはらで つくしを ", answer: "みつけた", after: "。", pos: "動詞" },
+    { before: "カレーライスを スプーンで ", answer: "もりもり", after: " たべる。", pos: "副詞" },
+    { before: "かぜを ひかないように ", answer: "あたたかく", after: " して ねる。", pos: "形容詞" },
+    { before: "こうえんの ベンチで おべんとうを ", answer: "ひろげた", after: "。", pos: "動詞" },
+    { before: "おほしさまに おねがいごとを ", answer: "した", after: "。", pos: "動詞" },
+    { before: "でんしゃの せきを おとしよりに ", answer: "ゆずった", after: "。", pos: "動詞" },
+    { before: "あさがおの つるが ぼうに ", answer: "まきついた", after: "。", pos: "動詞" },
+    { before: "おまつりの りんごあめが ", answer: "つやつや", after: " している。", pos: "副詞" },
+    { before: "ふゆの ゆきがっせんで ゆきだまを ", answer: "なげた", after: "。", pos: "動詞" },
+    { before: "おんがくの じかんに カスタネットを ", answer: "たたいた", after: "。", pos: "動詞" },
+    { before: "みずたまりを じょうずに ", answer: "とびこえた", after: "。", pos: "動詞" },
+    { before: "おとうさんと いっしょに おふろに ", answer: "はいった", after: "。", pos: "動詞" },
+    { before: "はなびの けむりが そらへ ", answer: "のぼっていった", after: "。", pos: "動詞" },
+    { before: "あかい クレヨンで たいようを ", answer: "ぬった", after: "。", pos: "動詞" },
+    { before: "いぬが おさんぽに いきたくて ", answer: "うずうず", after: " している。", pos: "副詞" },
+    { before: "おさらを わらないように ", answer: "そっと", after: " おいた。", pos: "副詞" },
+    { before: "なつの うみで かいすいよくを ", answer: "たのしんだ", after: "。", pos: "動詞" },
+    { before: "もりで カブトムシを ", answer: "つかまえた", after: "。", pos: "動詞" },
+    { before: "おつきさまが くもから ", answer: "かおをだした", after: "。", pos: "表現" },
+    { before: "あさ はやく おきて ラジオたいそうを ", answer: "した", after: "。", pos: "動詞" },
+    { before: "おべんとうの たまごやきが ", answer: "ふわふわで", after: " おいしい。", pos: "形容動詞" },
+    { before: "ふうせんを パンと ", answer: "わってしまった", after: "。", pos: "動詞" },
+    { before: "やまびこが むこうから ", answer: "かえってきた", after: "。", pos: "動詞" },
+    { before: "おやすみなさいと げんきに ", answer: "いった", after: "。", pos: "動詞" },
+    { before: "ほしぞらを ぼうえんきょうで ", answer: "かんさつした", after: "。", pos: "動詞" },
+    { before: "おまつりで きんぎょすくいに ", answer: "ちょうせんした", after: "。", pos: "動詞" },
+    { before: "あめの しずくが はっぱから ", answer: "ぽたりと", after: " おちた。", pos: "副詞" },
+    { before: "すなはまで なみと ", answer: "おいかけっこを", after: " した。", pos: "名詞" },
+    { before: "ともだちと えがおで ", answer: "さようならを", after: " した。", pos: "名詞" }
+  ],
+
+  // 【中学年】小学3〜4年生向け（200問）
+  mid: [
+    { before: "朝、窓を開けると ", answer: "さわやかな", after: " 風がふきこんできた。", pos: "形容動詞" },
+    { before: "ゴールテープを切ったしゅんかん、心が ", answer: "はずんだ", after: "。", pos: "表現" },
+    { before: "発表の順番が近づき、むねが ", answer: "どきどきと", after: " 高鳴った。", pos: "副詞" },
+    { before: "迷子の子犬を ", answer: "やさしく", after: " だきかかえた。", pos: "形容詞" },
+    { before: "夜の空に、まんまるな月が ", answer: "くっきりと", after: " うかんでいる。", pos: "副詞" },
+    { before: "友達とけんかをして、一日中 ", answer: "もやもやした", after: " 気持ちだった。", pos: "形容" },
+    { before: "図書館では、まわりの人のために ", answer: "しずかに", after: " 本を読む。", pos: "形容動詞" },
+    { before: "夏休みの計画をノートに ", answer: "くわしく", after: " 書き出した。", pos: "形容詞" },
+    { before: "山の上から見る町のけしきは ", answer: "すばらしかった", after: "。", pos: "形容詞" },
+    { before: "大事な試合に負けて、とても ", answer: "くやしい", after: " 思いをした。", pos: "形容詞" },
+    { before: "遠くから救急車のサイレンが ", answer: "きこえてきた", after: "。", pos: "動詞" },
+    { before: "みんなで力を合わせて、重い荷物を ", answer: "はこびだした", after: "。", pos: "動詞" },
+    { before: "わからない漢字の意味を国語辞典で ", answer: "しらべた", after: "。", pos: "動詞" },
+    { before: "花だんに水をやると、花が ", answer: "いきいきと", after: " してきた。", pos: "副詞" },
+    { before: "忘れ物に気がついて、あわてて家に ", answer: "ひきかえした", after: "。", pos: "動詞" },
+    { before: "雨がやんで、雲のすきまから太陽が ", answer: "まぶしく", after: " 差した。", pos: "形容詞" },
+    { before: "新しいクラスで、緊張しながら ", answer: "じこしょうかいした", after: "。", pos: "動詞" },
+    { before: "弟がこぼしたジュースを ", answer: "ていねいに", after: " ふきとった。", pos: "形容動詞" },
+    { before: "長い坂道をのぼりきり、息が ", answer: "あがった", after: "。", pos: "表現" },
+    { before: "秋の風がふき、木の葉が ", answer: "ひらひらと", after: " まい落ちる。", pos: "副詞" },
+    { before: "約束の時間に遅れそうで ", answer: "いそいで", after: " 駅へ向かった。", pos: "副詞" },
+    { before: "おばあちゃんの言葉を聞いて、心が ", answer: "あたたまった", after: "。", pos: "動詞" },
+    { before: "はじめてのキャンプは、見るものすべてが ", answer: "しんせんだった", after: "。", pos: "形容動詞" },
+    { before: "道に迷っていたお年寄りに、しんせつに道を ", answer: "おしえてあげた", after: "。", pos: "動詞" },
+    { before: "練習の成果が出て、前回よりも ", answer: "じょうずに", after: " 演奏できた。", pos: "形容動詞" },
+    { before: "理科の実験で、予想通りの結果が出て ", answer: "おどろいた", after: "。", pos: "動詞" },
+    { before: "遠足の前の日は、楽しみで ", answer: "わくわくして", after: " ねむれない。", pos: "副詞" },
+    { before: "クラス全員で意見を出し合い、ひとつの案に ", answer: "まとめた", after: "。", pos: "動詞" },
+    { before: "川の水がとても ", answer: "すきとおっていて", after: " 魚がよく見えた。", pos: "動詞" },
+    { before: "転校していく友達に、感謝の気持ちを ", answer: "つたえた", after: "。", pos: "動詞" },
+    { before: "台風が近づき、強い風が ", answer: "ごうごうと", after: " ふきあれた。", pos: "副詞" },
+    { before: "図工の時間に、ねんどを ", answer: "まるめたり", after: " のばしたりした。", pos: "動詞" },
+    { before: "社会科見学で工場へ行き、製品の作り方を ", answer: "まなんだ", after: "。", pos: "動詞" },
+    { before: "朝ごはんをしっかり食べたので、午前中から ", answer: "げんきいっぱいだ", after: "。", pos: "形容動詞" },
+    { before: "夕焼け空が ", answer: "まっかに", after: " そまってきれいだ。", pos: "形容動詞" },
+    { before: "難しい算数の問題がとけて、頭が ", answer: "すっきりした", after: "。", pos: "副詞" },
+    { before: "妹が迷子になってしまい、みんなであたりを ", answer: "さがしまわった", after: "。", pos: "動詞" },
+    { before: "お年玉を大切にするために、貯金箱に ", answer: "しまった", after: "。", pos: "動詞" },
+    { before: "音楽会で合唱を成功させるため、毎日 ", answer: "れんしゅうした", after: "。", pos: "動詞" },
+    { before: "冬の朝、窓ガラスに白い霜が ", answer: "びっしりと", after: " ついていた。", pos: "副詞" },
+    { before: "公園のベンチにすわって、読書に ", answer: "むちゅうになった", after: "。", pos: "形容動詞" },
+    { before: "給食のカレーが美味しくて、おかわりを ", answer: "たのんだ", after: "。", pos: "動詞" },
+    { before: "地域の清掃活動に参加し、町が ", answer: "きれいになった", after: "。", pos: "形容動詞" },
+    { before: "自転車の練習を何度もくりかえし、ついに ", answer: "のれるようになった", after: "。", pos: "表現" },
+    { before: "夜店で買ったりんごあめが、光に当たって ", answer: "かがやいていた", after: "。", pos: "動詞" },
+    { before: "お気に入りの傘がこわれてしまい、とても ", answer: "ざんねんだった", after: "。", pos: "形容動詞" },
+    { before: "体育館に全校児童が集まり、静かに話を ", answer: "きいていた", after: "。", pos: "動詞" },
+    { before: "夏休みに育てたヘチマが、屋根まで ", answer: "ぐんぐんと", after: " 伸びた。", pos: "副詞" },
+    { before: "友達のすてきな発表を聞いて、大きな ", answer: "はくしゅを送った", after: "。", pos: "表現" },
+    { before: "初めて作る料理だったが、レシピを見て ", answer: "ぶじに", after: " 完成した。", pos: "副詞" },
+    { before: "休み時間にドッジボールをして、汗を ", answer: "びっしょり", after: " かいた。", pos: "副詞" },
+    { before: "大切な本をなくしてしまい、必死に ", answer: "さがした", after: "。", pos: "動詞" },
+    { before: "運動会の応援団に選ばれ、大きな声で ", answer: "さけんだ", after: "。", pos: "動詞" },
+    { before: "山道を歩いていたら、きれいな小川を ", answer: "みつけた", after: "。", pos: "動詞" },
+    { before: "風邪をひいて休んだ友達に、プリントを ", answer: "とどけた", after: "。", pos: "動詞" },
+    { before: "夏祭りの太鼓の音が、遠くまで ", answer: "ひびいていた", after: "。", pos: "動詞" },
+    { before: "テストの返却前、よい点数がとれているか ", answer: "しんぱいだった", after: "。", pos: "形容動詞" },
+    { before: "水族館で見たイルカのジャンプは、とても ", answer: "はくりょくがあった", after: "。", pos: "表現" },
+    { before: "畑で育てたミニトマトが、赤く ", answer: "みのった", after: "。", pos: "動詞" },
+    { before: "図書室で借りた物語が面白くて、ページを ", answer: "めくる手が止まらない", after: "。", pos: "表現" },
+    { before: "朝の会の日直になり、みんなの前に ", answer: "たった", after: "。", pos: "動詞" },
+    { before: "習字の時間、お手本を見ながら ", answer: "しんちょうに", after: " 筆を動かした。", pos: "形容動詞" },
+    { before: "雨が降りそうだったので、急いで洗濯物を ", answer: "とりこんだ", after: "。", pos: "動詞" },
+    { before: "動物園で見たライオンのたてがみは ", answer: "りっぱだった", after: "。", pos: "形容動詞" },
+    { before: "キャンプファイヤーの火を囲んで、みんなで歌を ", answer: "うたった", after: "。", pos: "動詞" },
+    { before: "難しい漢字を覚えるため、ノートに何度も ", answer: "かいた", after: "。", pos: "動詞" },
+    { before: "友達の誕生日プレゼントを、心を込めて ", answer: "えらんだ", after: "。", pos: "動詞" },
+    { before: "冬の寒い日、ストーブのそばで手を ", answer: "あたためた", after: "。", pos: "動詞" },
+    { before: "博物館で昔の道具を見て、人々のくふうに ", answer: "かんしんした", after: "。", pos: "動詞" },
+    { before: "運動靴のひもがほどけていたので、しっかり ", answer: "むすびなおした", after: "。", pos: "動詞" },
+    { before: "遠足でお弁当を広げる場所を、みんなで ", answer: "きめた", after: "。", pos: "動詞" },
+    { before: "朝のあいさつ運動で、登校してくる人に ", answer: "こえをかけた", after: "。", pos: "表現" },
+    { before: "理科の観察で、モンシロチョウの成長を ", answer: "きろくした", after: "。", pos: "動詞" },
+    { before: "雷がゴロゴロと鳴り出し、空が急に ", answer: "くらくなった", after: "。", pos: "形容詞" },
+    { before: "お正月に家族みんなで百人一首をして ", answer: "もりあがった", after: "。", pos: "動詞" },
+    { before: "教室の黒板を、次の授業のためにきれいに ", answer: "けした", after: "。", pos: "動詞" },
+    { before: "放課後、リレーのバトンパスの練習を ", answer: "くりかえした", after: "。", pos: "動詞" },
+    { before: "秋の夜長に、虫の声が ", answer: "ここちよく", after: " 聞こえてくる。", pos: "形容詞" },
+    { before: "電車の中で、お年寄りに席を ", answer: "ゆずってあげた", after: "。", pos: "動詞" },
+    { before: "夏休みの自由研究で、地域の歴史を ", answer: "まとめた", after: "。", pos: "動詞" },
+    { before: "給食当番の白衣を、きれいにたたんで ", answer: "かたづけた", after: "。", pos: "動詞" },
+    { before: "初めてのプラネタリウムで、満天の星に ", answer: "みとれた", after: "。", pos: "動詞" },
+    { before: "雨の日に長ぐつをはいて、水たまりを ", answer: "あるいた", after: "。", pos: "動詞" },
+    { before: "クラスの係活動で、掲示物を ", answer: "はりかえた", after: "。", pos: "動詞" },
+    { before: "山登りの途中、冷たい湧き水を飲んで ", answer: "いきかえった", after: "。", pos: "動詞" },
+    { before: "大切な約束を破ってしまい、深く ", answer: "はんせいした", after: "。", pos: "動詞" },
+    { before: "ピアノの発表会で、練習通りに ", answer: "ひききった", after: "。", pos: "動詞" },
+    { before: "春になり、校庭の桜が一斉に ", answer: "さきほこった", after: "。", pos: "動詞" },
+    { before: "友達のアイデアにさんせいして、一緒に ", answer: "すすめることにした", after: "。", pos: "表現" },
+    { before: "台風のあと、校庭に落ちていた枝をみんなで ", answer: "ひろいあつめた", after: "。", pos: "動詞" },
+    { before: "図工で作った工作を、教室の後ろに ", answer: "かざった", after: "。", pos: "動詞" },
+    { before: "夕方のチャイムが鳴り、急いで家へ ", answer: "かえった", after: "。", pos: "動詞" },
+    { before: "自分の考えをノートに書いて、頭の中を ", answer: "せいりした", after: "。", pos: "動詞" },
+    { before: "水泳の記録会で、去年より速く ", answer: "およぎきった", after: "。", pos: "動詞" },
+    { before: "お祭りですくった金魚を、大切に ", answer: "そだてている", after: "。", pos: "動詞" },
+    { before: "授業中にわからないところを、先生に ", answer: "しつもんした", after: "。", pos: "動詞" },
+    { before: "夜空を見上げると、流れ星が ", answer: "すっと", after: " 横切った。", pos: "副詞" },
+    { before: "朝早く起きて、犬の散歩に ", answer: "でかけた", after: "。", pos: "動詞" },
+    { before: "クラス全員で協力し、文化祭の劇が ", answer: "だいせいこうした", after: "。", pos: "動詞" },
+    { before: "読書感想文を書くために、本のあらすじを ", answer: "おもいだした", after: "。", pos: "動詞" },
+    { before: "雨が降った翌朝、庭の草に水滴が ", answer: "きらめいていた", after: "。", pos: "動詞" },
+    { before: "初めての習い事で、最初は少し ", answer: "きんちょうした", after: "。", pos: "動詞" },
+    { before: "図書室でおすすめの本を友達に ", answer: "しょうかいした", after: "。", pos: "動詞" },
+    { before: "理科の実験器具を、こわさないよう ", answer: "あつかった", after: "。", pos: "動詞" },
+    { before: "遠足で見た滝の水しぶきが ", answer: "すずしかった", after: "。", pos: "形容詞" },
+    { before: "クラスの目標をみんなで話し合って ", answer: "決定した", after: "。", pos: "動詞" },
+    { before: "夏休みに海へ行き、きれいな貝がらを ", answer: "あつめた", after: "。", pos: "動詞" },
+    { before: "給食の時間に、苦手な野菜も ", answer: "のこさず食べた", after: "。", pos: "表現" },
+    { before: "体育のマット運動で、前転が ", answer: "きれいにできた", after: "。", pos: "表現" },
+    { before: "夜遅くまで起きていたので、朝は ", answer: "ねむかった", after: "。", pos: "形容詞" },
+    { before: "道ばたに咲いているタンポポを ", answer: "かんさつした", after: "。", pos: "動詞" },
+    { before: "お正月に親戚が集まり、にぎやかに ", answer: "すごした", after: "。", pos: "動詞" },
+    { before: "大切な手紙をなくさないように ", answer: "ほかんした", after: "。", pos: "動詞" },
+    { before: "サッカーの試合で、キーパーがボールを ", answer: "うけとめた", after: "。", pos: "動詞" },
+    { before: "図書館で借りた本の返却日を ", answer: "かくにんした", after: "。", pos: "動詞" },
+    { before: "秋の遠足で、山道に落ちている ", answer: "くりを拾った", after: "。", pos: "表現" },
+    { before: "習字で書いた作品を、廊下に ", answer: "てんじした", after: "。", pos: "動詞" },
+    { before: "風邪をひかないよう、外から帰ったら ", answer: "うがいをした", after: "。", pos: "動詞" },
+    { before: "新しい自転車を買ってもらい、とても ", answer: "まんぞくだった", after: "。", pos: "形容動詞" },
+    { before: "地域の祭りで、みんなでみこしを ", answer: "かついだ", after: "。", pos: "動詞" },
+    { before: "算数の文章題を、図に書いて ", answer: "せいりした", after: "。", pos: "動詞" },
+    { before: "雨の日に、傘をさしてゆっくり ", answer: "とうこうした", after: "。", pos: "動詞" },
+    { before: "夏の夜、ベランダでスイカを食べて ", answer: "すずんだ", after: "。", pos: "動詞" },
+    { before: "クラスメイトのよいところを ", answer: "みつけた", after: "。", pos: "動詞" },
+    { before: "体育館の掃除を、みんなで ", answer: "ぶんたんした", after: "。", pos: "動詞" },
+    { before: "旅行の思い出を、写真と一緒に ", answer: "アルバムに貼った", after: "。", pos: "表現" },
+    { before: "音楽の授業で、リコーダーの指使いを ", answer: "おぼえた", after: "。", pos: "動詞" },
+    { before: "冬の寒い日に、温かいスープを飲んで ", answer: "ほっとした", after: "。", pos: "動詞" },
+    { before: "避難訓練で、先生の指示を ", answer: "しっかり聞いた", after: "。", pos: "表現" },
+    { before: "花だんの雑草をぬいて、土を ", answer: "たがやした", after: "。", pos: "動詞" },
+    { before: "友達の誕生日会に招待されて ", answer: "さんかした", after: "。", pos: "動詞" },
+    { before: "難しいパズルがようやく完成して ", answer: "たっせいかんがあった", after: "。", pos: "表現" },
+    { before: "朝の会で、昨日のニュースについて ", answer: "はっぴょうした", after: "。", pos: "動詞" },
+    { before: "公園の池で、カモの親子が ", answer: "およいでいた", after: "。", pos: "動詞" },
+    { before: "大切な約束を忘れないよう、メモに ", answer: "かきとめた", after: "。", pos: "動詞" },
+    { before: "夏休みの宿題を、計画通りに ", answer: "すすめた", after: "。", pos: "動詞" },
+    { before: "理科の時間に、磁石の性質を ", answer: "じっけんした", after: "。", pos: "動詞" },
+    { before: "お年寄りの荷物を持ってあげたら、", answer: "かんしゃされた", after: "。", pos: "動詞" },
+    { before: "運動会のリレーで、バトンを ", answer: "つないだ", after: "。", pos: "動詞" },
+    { before: "夕暮れ時、西の空に一番星が ", answer: "ひかりはじめた", after: "。", pos: "動詞" },
+    { before: "図工の時間に、木切れを組み合わせて ", answer: "くみたてた", after: "。", pos: "動詞" },
+    { before: "社会科の授業で、自分たちの町の ", answer: "ちずを作った", after: "。", pos: "表現" },
+    { before: "雨上がりの空に、大きな虹が ", answer: "かかった", after: "。", pos: "動詞" },
+    { before: "家族みんなで協力して、大掃除を ", answer: "おえた", after: "。", pos: "動詞" },
+    { before: "国語の音読の宿題を、感情を込めて ", answer: "よんだ", after: "。", pos: "動詞" },
+    { before: "新しい筆箱を買ってもらい、勉強の ", answer: "やる気が出た", after: "。", pos: "表現" },
+    { before: "キャンプの夜、満天の星空を ", answer: "かんさつした", after: "。", pos: "動詞" },
+    { before: "友達と意見が合わなかったが、よく ", answer: "はなしあった", after: "。", pos: "動詞" },
+    { before: "水泳の授業で、息つぎのタイミングを ", answer: "つかんだ", after: "。", pos: "動詞" },
+    { before: "季節の変わり目なので、体調管理に ", answer: "きをつけた", after: "。", pos: "動詞" },
+    { before: "図書館の静かな雰囲気の中で、集中して ", answer: "べんきょうした", after: "。", pos: "動詞" },
+    { before: "お母さんの誕生日に、感謝の手紙を ", answer: "わたした", after: "。", pos: "動詞" },
+    { before: "遠足で歩いた距離が長くて、足が ", answer: "つかれた", after: "。", pos: "動詞" },
+    { before: "理科室で顕微鏡を使って、小さな ", answer: "せいぶつを見た", after: "。", pos: "表現" },
+    { before: "お祭りの夜店で買った焼きそばが ", answer: "おいしかった", after: "。", pos: "形容詞" },
+    { before: "クラスの係の仕事に、最後まで ", answer: "せきにんを持った", after: "。", pos: "表現" },
+    { before: "冬の朝、吐く息が白く ", answer: "みえた", after: "。", pos: "動詞" },
+    { before: "友達の失敗を笑わず、優しく ", answer: "はげました", after: "。", pos: "動詞" },
+    { before: "公園の砂場で、友達と協力して ", answer: "お城を作った", after: "。", pos: "表現" },
+    { before: "夏休みに祖父母の家へ行き、", answer: "のんびり過ごした", after: "。", pos: "表現" },
+    { before: "体育の時間に、跳び箱の6段を ", answer: "とびこえた", after: "。", pos: "動詞" },
+    { before: "朝の通学路で、地域の見守り隊の人に ", answer: "あいさつした", after: "。", pos: "動詞" },
+    { before: "図書委員として、本の貸し出しの ", answer: "てつづきをした", after: "。", pos: "動詞" },
+    { before: "雨の日に、窓の外を眺めながら ", answer: "えをかいた", after: "。", pos: "表現" },
+    { before: "給食の献立表を見て、明日のメニューを ", answer: "たしかめた", after: "。", pos: "動詞" },
+    { before: "山登りの頂上で食べたおにぎりは ", answer: "かくべつだった", after: "。", pos: "形容動詞" },
+    { before: "授業で習ったことを、家に帰ってから ", answer: "ふくしゅうした", after: "。", pos: "動詞" },
+    { before: "友達とゲームをして、時間を忘れて ", answer: "もりあがった", after: "。", pos: "動詞" },
+    { before: "春の暖かい日差しの中で、虫たちが ", answer: "うごきだした", after: "。", pos: "動詞" },
+    { before: "大切な思い出の品を、箱の中に ", answer: "しまっておいた", after: "。", pos: "動詞" },
+    { before: "音楽会で木琴の担当になり、リズムを ", answer: "あわせた", after: "。", pos: "動詞" },
+    { before: "初めての料理で、野菜を慎重に ", answer: "きった", after: "。", pos: "動詞" },
+    { before: "夜空に打ち上がる花火の音を聞いて、", answer: "おどろいた", after: "。", pos: "動詞" },
+    { before: "クラス全員で力を合わせ、大縄跳びの ", answer: "きろくを伸ばした", after: "。", pos: "表現" },
+    { before: "図書館で動物図鑑を開き、珍しい ", answer: "いきものを調べた", after: "。", pos: "表現" },
+    { before: "朝の涼しい時間帯に、朝顔に ", answer: "みずやりをした", after: "。", pos: "動詞" },
+    { before: "遠足のお弁当箱を、帰ってから自分で ", answer: "あらった", after: "。", pos: "動詞" },
+    { before: "冬の夜、家族で鍋料理を囲んで ", answer: "あたたまった", after: "。", pos: "動詞" },
+    { before: "国語の時間に、物語の登場人物の ", answer: "きもちを考えた", after: "。", pos: "表現" },
+    { before: "新しい学年になり、気持ちも新たに ", answer: "スタートを切った", after: "。", pos: "表現" }
+  ],
+
+  // 【高学年】小学5〜6年生向け（200問）
+  high: [
+    { before: "夕日に照らされた海面が、黄金色に ", answer: "きらめいていた", after: "。", pos: "動詞" },
+    { before: "修学旅行の夜、友達と ", answer: "語り合った", after: " ことは一生の思い出だ。", pos: "動詞" },
+    { before: "失敗を恐れず、新しい課題に ", answer: "果敢に", after: " 挑戦する。", pos: "副詞" },
+    { before: "彼の意見には説得力があり、クラス全員が ", answer: "納得した", after: "。", pos: "動詞" },
+    { before: "自然環境を守るために、私たちができることを ", answer: "真剣に", after: " 考えた。", pos: "形容動詞" },
+    { before: "卒業式の日、これまでの日々を思い出し胸が ", answer: "熱くなった", after: "。", pos: "表現" },
+    { before: "山頂から見渡す雲海は、息をのむほど ", answer: "壮大だった", after: "。", pos: "形容動詞" },
+    { before: "相手の立場に立って考えることが、", answer: "思いやり", after: " につながる。", pos: "名詞" },
+    { before: "実験の結果をグラフにまとめ、変化を ", answer: "分析した", after: "。", pos: "動詞" },
+    { before: "長年の努力が実を結び、ついに目標を ", answer: "達成した", after: "。", pos: "動詞" },
+    { before: "静まり返った体育館に、緊張感が ", answer: "漂っていた", after: "。", pos: "動詞" },
+    { before: "地域の伝統行事を未来へ ", answer: "受け継いで", after: " いきたい。", pos: "動詞" },
+    { before: "予想外の展開に、会場中が ", answer: "どよめいた", after: "。", pos: "動詞" },
+    { before: "自分の考えを相手にわかりやすく ", answer: "表現する", after: " 力を養う。", pos: "動詞" },
+    { before: "互いの違いを認め合い、", answer: "協力して", after: " 作品を完成させた。", pos: "動詞" },
+    { before: "夜明け前の空が、少しずつ ", answer: "白み始めた", after: "。", pos: "動詞" },
+    { before: "先生の助言のおかげで、迷いが ", answer: "すっきり", after: " 晴れた。", pos: "副詞" },
+    { before: "歴史の資料を調べることで、当時のくらしが ", answer: "鮮明に", after: " 浮かぶ。", pos: "形容動詞" },
+    { before: "チーム全員の心が一つになり、逆転勝利を ", answer: "収めた", after: "。", pos: "動詞" },
+    { before: "小さな親切が、巡り巡って大きな ", answer: "喜びを", after: " 生み出す。", pos: "表現" },
+    { before: "議論が白熱し、それぞれの主張が ", answer: "ぶつかり合った", after: "。", pos: "動詞" },
+    { before: "委員会活動を通して、学校全体を支える ", answer: "責任感", after: " が芽生えた。", pos: "名詞" },
+    { before: "名作と呼ばれる小説を読み、登場人物の心情に ", answer: "共感した", after: "。", pos: "動詞" },
+    { before: "限られた時間の中で、最も効率的な方法を ", answer: "模索した", after: "。", pos: "動詞" },
+    { before: "運動会の組体操では、仲間との ", answer: "信頼関係", after: " が不可欠だ。", pos: "名詞" },
+    { before: "ニュースで世界の出来事を知り、視野が ", answer: "広がった", after: "。", pos: "動詞" },
+    { before: "困難な状況に直面しても、決して ", answer: "あきらめない", after: " 心が大切だ。", pos: "動詞" },
+    { before: "森林伐採が地球温暖化に与える影響を ", answer: "調査した", after: "。", pos: "動詞" },
+    { before: "舞台の幕が上がり、照明が選手たちを ", answer: "照らし出した", after: "。", pos: "動詞" },
+    { before: "日々の積み重ねが、やがて大きな ", answer: "自信へと", after: " 変わっていく。", pos: "表現" },
+    { before: "古都の街並みを歩き、日本の歴史の ", answer: "奥深さを", after: " 感じた。", pos: "名詞" },
+    { before: "相手の話を最後まで遮らずに ", answer: "傾聴する", after: " 姿勢を持つ。", pos: "動詞" },
+    { before: "防災訓練を通じて、日頃からの ", answer: "備えの", after: " 大切さを痛感した。", pos: "名詞" },
+    { before: "新学期を迎え、新たな目標に向かって ", answer: "決意を", after: " 固めた。", pos: "名詞" },
+    { before: "科学館で最新の技術に触れ、未来への ", answer: "期待が", after: " ふくらんだ。", pos: "名詞" },
+    { before: "ボランティア活動に参加し、地域社会に ", answer: "貢献した", after: "。", pos: "動詞" },
+    { before: "情報の真偽を確かめるために、複数の資料を ", answer: "比較した", after: "。", pos: "動詞" },
+    { before: "秋が深まり、山全体が赤や黄色に ", answer: "彩られて", after: " いる。", pos: "動詞" },
+    { before: "自分の弱点と向き合い、粘り強く ", answer: "克服した", after: "。", pos: "動詞" },
+    { before: "多様な文化を尊重し、偏見を持たずに ", answer: "接する", after: " ことが重要だ。", pos: "動詞" },
+    { before: "音楽の旋律が心に響き、自然と涙が ", answer: "こぼれた", after: "。", pos: "動詞" },
+    { before: "データをもとに仮説を立て、実験で ", answer: "検証する", after: "。", pos: "動詞" },
+    { before: "卒業制作では、6年間の感謝の思いを ", answer: "込めた", after: "。", pos: "動詞" },
+    { before: "朝の澄んだ空気を吸い込み、気持ちを ", answer: "切り替えた", after: "。", pos: "動詞" },
+    { before: "意見が対立したときこそ、冷静に ", answer: "対話する", after: " 必要がある。", pos: "動詞" },
+    { before: "夜空に打ち上げられた花火が、一瞬で ", answer: "夜闇を", after: " 照らした。", pos: "名詞" },
+    { before: "下級生の面倒を見ることで、最高学年としての ", answer: "自覚が", after: " 高まった。", pos: "名詞" },
+    { before: "文章の論理的な構成を意識し、主張を ", answer: "明確に", after: " する。", pos: "形容動詞" },
+    { before: "失敗の原因を客観的に見つめ直し、次に ", answer: "生かす", after: "。", pos: "動詞" },
+    { before: "仲間と共に流した汗と涙は、かけがえのない ", answer: "財産だ", after: "。", pos: "名詞" },
+    { before: "平和の尊さを学び、戦争の悲惨さを ", answer: "痛感した", after: "。", pos: "動詞" },
+    { before: "限られた資源を大切にし、持続可能な社会を ", answer: "目指す", after: "。", pos: "動詞" },
+    { before: "相手の意見の良い点を見つけ、素直に ", answer: "称賛した", after: "。", pos: "動詞" },
+    { before: "計画通りに物事が進まず、臨機応変に ", answer: "対応した", after: "。", pos: "動詞" },
+    { before: "深い霧が立ち込め、視界が ", answer: "遮られた", after: "。", pos: "動詞" },
+    { before: "読書を通じて未知の世界に触れ、想像力が ", answer: "豊かに", after: " なった。", pos: "形容動詞" },
+    { before: "チーム内の役割分担を決め、責任を持って ", answer: "遂行した", after: "。", pos: "動詞" },
+    { before: "長い歴史を持つ建造物の美しさに、思わず ", answer: "圧倒された", after: "。", pos: "動詞" },
+    { before: "自分の長所を伸ばし、短所を ", answer: "補う", after: " 努力をする。", pos: "動詞" },
+    { before: "地域の課題について調べ、解決策を ", answer: "提案した", after: "。", pos: "動詞" },
+    { before: "嵐が過ぎ去り、雲の切れ間から一条の光が ", answer: "差し込んだ", after: "。", pos: "動詞" },
+    { before: "異文化交流を通じて、国際理解を ", answer: "深めた", after: "。", pos: "動詞" },
+    { before: "実験の失敗から新たな気づきを得て、研究が ", answer: "前進した", after: "。", pos: "動詞" },
+    { before: "礼儀正しい言葉遣いを心がけ、相手への ", answer: "敬意を", after: " 表す。", pos: "名詞" },
+    { before: "自然の驚異を目の当たりにし、人間の力の ", answer: "小ささを", after: " 知った。", pos: "名詞" },
+    { before: "毎日の地道な練習が、本番での ", answer: "揺るぎない", after: " 力になる。", pos: "形容詞" },
+    { before: "ニュースの背景にある原因を、多角的に ", answer: "考察する", after: "。", pos: "動詞" },
+    { before: "伝統工芸の職人の技に、日本の誇りを ", answer: "見いだした", after: "。", pos: "動詞" },
+    { before: "困難な壁にぶつかっても、仲間と ", answer: "励まし合って", after: " 乗り越えた。", pos: "動詞" },
+    { before: "環境問題への関心が高まり、日常生活を ", answer: "見直した", after: "。", pos: "動詞" },
+    { before: "自分の言葉に責任を持ち、誠実に ", answer: "行動する", after: "。", pos: "動詞" },
+    { before: "音楽会の合奏で、全員の息が ", answer: "ぴったりと", after: " 合った。", pos: "副詞" },
+    { before: "歴史上の人物の生き方から、多くの ", answer: "教訓を", after: " 学んだ。", pos: "名詞" },
+    { before: "新しい環境にもすぐに慣れ、積極的に ", answer: "溶け込んだ", after: "。", pos: "動詞" },
+    { before: "データの変化に注目し、その理由を ", answer: "推測した", after: "。", pos: "動詞" },
+    { before: "多くの人の支えがあって今の自分があると、深く ", answer: "感謝した", after: "。", pos: "動詞" },
+    { before: "文章の要点をつかみ、簡潔に ", answer: "要約する", after: "。", pos: "動詞" },
+    { before: "夜明けの静寂の中、鳥たちのさえずりが ", answer: "響き渡る", after: "。", pos: "動詞" },
+    { before: "規則正しい生活習慣を身につけ、体調を ", answer: "整える", after: "。", pos: "動詞" },
+    { before: "議論を深めるために、具体的な事例を ", answer: "挙げた", after: "。", pos: "動詞" },
+    { before: "芸術作品に触れることで、感性が ", answer: "磨かれた", after: "。", pos: "動詞" },
+    { before: "将来の夢を実現するために、今やるべきことを ", answer: "明確にする", after: "。", pos: "動詞" },
+    { before: "地域の清掃活動を通じて、町への愛着が ", answer: "湧いた", after: "。", pos: "動詞" },
+    { before: "予期せぬトラブルにも慌てず、冷静に ", answer: "対処した", after: "。", pos: "動詞" },
+    { before: "多くの資料を読み込み、知識を ", answer: "蓄えた", after: "。", pos: "動詞" },
+    { before: "お互いの意見を調整し、最善の結論を ", answer: "導き出した", after: "。", pos: "動詞" },
+    { before: "冬の澄んだ夜空に、無数の星が ", answer: "輝いていた", after: "。", pos: "動詞" },
+    { before: "学校生活のルールを守り、秩序を ", answer: "保つ", after: "。", pos: "動詞" },
+    { before: "相手の気持ちを察し、適切な言葉を ", answer: "選んで", after: " 伝える。", pos: "動詞" },
+    { before: "新しい発見に胸を躍らせ、さらに ", answer: "探究した", after: "。", pos: "動詞" },
+    { before: "これまでの歩みを振り返り、成長を ", answer: "実感した", after: "。", pos: "動詞" },
+    { before: "文化祭のポスター制作で、デザインの工夫を ", answer: "凝らした", after: "。", pos: "動詞" },
+    { before: "災害時の避難経路を確認し、安全意識を ", answer: "高めた", after: "。", pos: "動詞" },
+    { before: "自分の意見だけでなく、少数派の意見も ", answer: "尊重する", after: "。", pos: "動詞" },
+    { before: "季節の移ろいを肌で感じ、自然の美しさに ", answer: "感動した", after: "。", pos: "動詞" },
+    { before: "課題の本質を見極め、根本的な解決を ", answer: "図る", after: "。", pos: "動詞" },
+    { before: "仲間との絆を深め、最高の思い出を ", answer: "刻んだ", after: "。", pos: "動詞" },
+    { before: "インターネットの情報をうのみにせず、自分で ", answer: "確かめる", after: "。", pos: "動詞" },
+    { before: "目標に向かって一歩ずつ、着実に ", answer: "歩みを進めた", after: "。", pos: "表現" },
+    { before: "小学校生活の集大成として、全力で ", answer: "やり遂げた", after: "。", pos: "動詞" },
+    { before: "社会科の学習で、日本の産業の ", answer: "発展について", after: " 調べた。", pos: "表現" },
+    { before: "長編小説を読み終え、深い ", answer: "余韻に", after: " 浸った。", pos: "名詞" },
+    { before: "自分の行動が周囲に与える影響を ", answer: "自覚する", after: " ことが大切だ。", pos: "動詞" },
+    { before: "合奏の練習で、互いの音のバランスを ", answer: "意識した", after: "。", pos: "動詞" },
+    { before: "異なる意見を取り入れ、考えを ", answer: "発展させた", after: "。", pos: "動詞" },
+    { before: "古代の遺跡を見学し、当時の技術力に ", answer: "驚嘆した", after: "。", pos: "動詞" },
+    { before: "日常生活の無駄を省き、資源の ", answer: "有効活用を", after: " 心がける。", pos: "名詞" },
+    { before: "困難な任務を引き受け、見事に ", answer: "果たした", after: "。", pos: "動詞" },
+    { before: "文章の説得力を高めるため、客観的な ", answer: "根拠を示す", after: "。", pos: "表現" },
+    { before: "朝霧が晴れ、山々の輪郭が ", answer: "くっきりと", after: " 現れた。", pos: "副詞" },
+    { before: "地域の高齢者との交流を通じて、温かい ", answer: "つながりを", after: " 感じた。", pos: "名詞" },
+    { before: "新しい視点から物事を捉え直し、発想を ", answer: "転換した", after: "。", pos: "動詞" },
+    { before: "運動会の応援合戦で、クラスの一体感が ", answer: "高まった", after: "。", pos: "動詞" },
+    { before: "事実と意見を明確に区別して、文章を ", answer: "構成する", after: "。", pos: "動詞" },
+    { before: "先人たちの知恵と努力に、深い ", answer: "敬意を払う", after: "。", pos: "表現" },
+    { before: "予習と復習を習慣化し、基礎学力を ", answer: "定着させた", after: "。", pos: "動詞" },
+    { before: "自然災害の恐ろしさを学び、日頃の ", answer: "意識改革を", after: " 図る。", pos: "名詞" },
+    { before: "相手の表情や声のトーンから、心情を ", answer: "読み取る", after: "。", pos: "動詞" },
+    { before: "限られた予算の中で、最大の成果を ", answer: "上げた", after: "。", pos: "動詞" },
+    { before: "修学旅行の事前学習で、訪問地の歴史を ", answer: "把握した", after: "。", pos: "動詞" },
+    { before: "自分の限界を決めつけず、可能性を ", answer: "信じて", after: " 挑み続ける。", pos: "動詞" },
+    { before: "多様な人々の意見を集約し、合意形成を ", answer: "目指す", after: "。", pos: "動詞" },
+    { before: "澄み切った秋空のもと、体育大会が ", answer: "盛大に", after: " 開催された。", pos: "形容動詞" },
+    { before: "複雑な仕組みをわかりやすく図解して、", answer: "説明した", after: "。", pos: "動詞" },
+    { before: "仲間と切磋琢磨しながら、互いの技術を ", answer: "高め合った", after: "。", pos: "動詞" },
+    { before: "環境保全の取り組みについて、全校生徒に ", answer: "呼びかけた", after: "。", pos: "動詞" },
+    { before: "物語の結末について、自分の解釈を ", answer: "述べた", after: "。", pos: "動詞" },
+    { before: "急な予定変更にも動じず、柔軟に ", answer: "対処した", after: "。", pos: "動詞" },
+    { before: "日々の小さな変化に気づく、鋭い ", answer: "観察眼を", after: " 養う。", pos: "名詞" },
+    { before: "地域の伝統芸能を保存するため、練習に ", answer: "励んでいる", after: "。", pos: "動詞" },
+    { before: "相手の立場に配慮しながら、率直な ", answer: "意見を伝える", after: "。", pos: "表現" },
+    { before: "実験結果の誤差について、その原因を ", answer: "追究した", after: "。", pos: "動詞" },
+    { before: "卒業アルバムのメッセージに、友情の ", answer: "証を", after: " 残した。", pos: "名詞" },
+    { before: "世界の食糧問題について調べ、自分たちの ", answer: "食生活を", after: " 見直した。", pos: "名詞" },
+    { before: "舞台本番の緊張を乗り越え、堂々と ", answer: "演じきった", after: "。", pos: "動詞" },
+    { before: "複数の情報を関連づけて考え、本質を ", answer: "見抜く", after: "。", pos: "動詞" },
+    { before: "学校行事の運営を通じて、計画性と ", answer: "実行力を", after: " 身につけた。", pos: "名詞" },
+    { before: "四季折々の自然の美しさに触れ、豊かな ", answer: "情操を", after: " 育む。", pos: "名詞" },
+    { before: "困難な状況でも希望を失わず、前向きに ", answer: "前進する", after: "。", pos: "動詞" },
+    { before: "相手の主張の矛盾点を指摘し、議論を ", answer: "深めた", after: "。", pos: "動詞" },
+    { before: "地域の防災マップを作成し、危険箇所を ", answer: "共有した", after: "。", pos: "動詞" },
+    { before: "長年の夢をかなえるため、地道な努力を ", answer: "積み重ねた", after: "。", pos: "動詞" },
+    { before: "文章全体の流れを意識し、適切な ", answer: "接続語を", after: " 用いる。", pos: "名詞" },
+    { before: "異学年の児童と交流し、思いやりの心を ", answer: "育んだ", after: "。", pos: "動詞" },
+    { before: "科学技術の進歩が私たちの生活にもたらす ", answer: "恩恵を", after: " 考える。", pos: "名詞" },
+    { before: "自分の役割を自覚し、周囲と連携して ", answer: "行動した", after: "。", pos: "動詞" },
+    { before: "歴史の転換点となった出来事について、", answer: "詳しく", after: " 考察する。", pos: "形容詞" },
+    { before: "音楽の歌詞に込められたメッセージを、深く ", answer: "味わった", after: "。", pos: "動詞" },
+    { before: "地球規模の課題に対して、自分にできる ", answer: "一歩を", after: " 踏み出す。", pos: "名詞" },
+    { before: "多くの経験を通じて培った力を、中学校でも ", answer: "発揮したい", after: "。", pos: "動詞" }
+  ]
+};
+
+/**
+ * 学年別 特別ボーナスステージ用 テーマ別ことばデータベース（低・中・高 各10テーマ）
+ * 25枚のパネルの中から、テーマに合う10個の言葉を探し出す
+ */
+const BONUS_THEMES_BY_GRADE = {
+  // 【低学年】ひらがな・カタカナ表記（外来語・擬音語はカタカナ統一）（10テーマ）
+  low: [
+    {
+      name: "うれしい・たのしい きもちの ことば",
+      highlight: "うれしい・たのしい きもち",
+      targets: ["わくわく", "うきうき", "にっこり", "ルンルン", "うれしい", "たのしい", "えがお", "ほっとする", "だいすき", "やったー", "ニコニコ", "ウキウキ"],
+      dummies: ["しょんぼり", "イライラ", "くやしい", "かなしい", "おこる", "さびしい", "めそめそ", "がっかり", "こわい", "なやむ", "あせる", "びっくり", "ぷんぷん", "しくしく", "おびえる", "つまらない", "たいくつ", "うらやむ"]
+    },
+    {
+      name: "おとや こえの ようすを あらわす ことば",
+      highlight: "おとや こえの ようす",
+      targets: ["ざあざあ", "わんわん", "ひそひそ", "ざわざわ", "ぱちぱち", "ゴロゴロ", "チクタク", "ガタンゴトン", "ゲラゲラ", "しーん", "ピーピー", "にゃあにゃあ"],
+      dummies: ["きらきら", "ふわふわ", "すやすや", "のろのろ", "にこにこ", "ぴかぴか", "つるつる", "ぐんぐん", "そよそよ", "くっきり", "ふっくら", "さらさら", "ずっしり", "ゆったり", "はっきり", "こっそり", "しっかり", "うっかり"]
+    },
+    {
+      name: "うごきや こうどうを あらわす ことば",
+      highlight: "うごきや こうどう",
+      targets: ["はしる", "あるく", "とぶ", "およぐ", "たべる", "のむ", "かく", "よむ", "あそぶ", "うたう", "わらう", "おどる"],
+      dummies: ["あかい", "おおきい", "ちいさい", "うれしい", "とても", "ゆっくり", "げんき", "やさしい", "ながい", "あまい", "つめたい", "あつい", "しろい", "くろい", "まるい", "しかくい", "たのしい", "つよい"]
+    },
+    {
+      name: "たべものに かんけいする ことば",
+      highlight: "たべもの",
+      targets: ["りんご", "バナナ", "おにぎり", "カレー", "パン", "ぎゅうにゅう", "すいか", "いちご", "みかん", "たまご", "メロン", "うどん"],
+      dummies: ["えんぴつ", "つくえ", "いす", "くつ", "ぼうし", "かばん", "でんしゃ", "くるま", "ひこうき", "じてんしゃ", "とけい", "ほん", "ノート", "けしごむ", "はさみ", "かさ", "ボール", "ぬいぐるみ"]
+    },
+    {
+      name: "どうぶつや いきものの なまえ",
+      highlight: "どうぶつや いきもの",
+      targets: ["いぬ", "ねこ", "うさぎ", "かえる", "ぞう", "きりん", "ライオン", "くま", "さる", "とり", "さかな", "ちょうちょ"],
+      dummies: ["さくら", "ひまわり", "チューリップ", "やま", "かわ", "うみ", "そら", "くも", "たいよう", "おつきさま", "ほし", "あめ", "ゆき", "かぜ", "いし", "つち", "き", "はっぱ"]
+    },
+    {
+      name: "がっこうで つかう どうぐの なまえ",
+      highlight: "がっこうで つかう どうぐ",
+      targets: ["えんぴつ", "けしごむ", "ノート", "じょうぎ", "はさみ", "のり", "クレヨン", "ランドセル", "ふでばこ", "きょうかしょ", "したじき", "うわばき"],
+      dummies: ["おたま", "フライパン", "ほうちょう", "れいぞうこ", "せんたくき", "そうじき", "まくら", "ふとん", "はぶらし", "タオル", "シャンプー", "せっけん", "おわん", "おはし", "スプーン", "コップ", "テレビ", "エアコン"]
+    },
+    {
+      name: "おてんきや そらに かんけいする ことば",
+      highlight: "おてんきや そら",
+      targets: ["はれ", "くもり", "あめ", "ゆき", "かみなり", "にじ", "たいよう", "おつきさま", "ほし", "くも", "かぜ", "あらし"],
+      dummies: ["つくえ", "いす", "えんぴつ", "りんご", "いぬ", "ねこ", "でんしゃ", "くるま", "くつ", "ぼうし", "とけい", "ほん", "ボール", "おにぎり", "パン", "はな", "き", "いし"]
+    },
+    {
+      name: "のりものに かんけいする ことば",
+      highlight: "のりもの",
+      targets: ["でんしゃ", "バス", "くるま", "ひこうき", "しんかんせん", "じてんしゃ", "ふね", "トラック", "パトカー", "しょうぼうしゃ", "きゅうきゅうしゃ", "ヘリコプター"],
+      dummies: ["りんご", "みかん", "すいか", "いぬ", "ねこ", "うさぎ", "えんぴつ", "ノート", "つくえ", "いす", "くつ", "ぼうし", "はな", "やま", "かわ", "うみ", "たいよう", "ほし"]
+    },
+    {
+      name: "ものの いろを あらわす ことば",
+      highlight: "ものの いろ",
+      targets: ["あかい", "あおい", "きいろい", "しろい", "くろい", "みどり", "ちゃいろ", "ももいろ", "むらさき", "みずいろ", "オレンジ", "きんいろ"],
+      dummies: ["おおきい", "ちいさい", "ながい", "みじかい", "たかい", "ひくい", "おもい", "かるい", "あつい", "つめたい", "あまい", "からい", "はやい", "おそい", "つよい", "よわい", "まるい", "しかくい"]
+    },
+    {
+      name: "しぜんや おはなに かんけいする ことば",
+      highlight: "しぜんや おはな",
+      targets: ["さくら", "ひまわり", "チューリップ", "たんぽぽ", "あさがお", "やま", "かわ", "うみ", "もり", "はっぱ", "どんぐり", "まつぼっくり"],
+      dummies: ["でんしゃ", "くるま", "ひこうき", "えんぴつ", "けしごむ", "つくえ", "いす", "とけい", "テレビ", "れいぞうこ", "おにぎり", "パン", "カレー", "くつ", "ぼうし", "かばん", "ボール", "ロボット"]
+    }
+  ],
+
+  // 【中学年】小学3〜4年生向け（10テーマ・カタカナ表記統一）
+  mid: [
+    {
+      name: "うれしい・楽しい気持ちを表す言葉",
+      highlight: "うれしい・楽しい気持ち",
+      targets: ["わくわく", "うきうき", "ほっとする", "心がおどる", "にっこり", "ルンルン", "誇らしい", "満足する", "晴れやか", "喜ばしい", "笑顔になる", "弾む気持ち"],
+      dummies: ["しょんぼり", "イライラ", "くやしい", "どきどき", "不安だ", "ため息", "悲しい", "おこる", "さびしい", "退屈だ", "おどろく", "なやむ", "あせる", "うらやむ", "めそめそ", "がっかり", "おびえる", "しかめっ面"]
+    },
+    {
+      name: "音や声の様子を表す言葉（副詞）",
+      highlight: "音や声の様子",
+      targets: ["ざあざあ", "わんわん", "ひそひそ", "ざわざわ", "ぱちぱち", "ゴロゴロ", "チクタク", "ガタンゴトン", "ゲラゲラ", "しーん", "ピーピー", "ぶつぶつ"],
+      dummies: ["きらきら", "ふわふわ", "すやすや", "のろのろ", "にこにこ", "ぴかぴか", "つるつる", "ぐんぐん", "そよそよ", "くっきり", "ふっくら", "さらさら", "ずっしり", "ゆったり", "はっきり", "こっそり", "しっかり", "うっかり"]
+    },
+    {
+      name: "動き・行動を表す言葉（動詞）",
+      highlight: "動き・行動",
+      targets: ["走る", "調べる", "観察する", "協力する", "挑戦する", "伝える", "考える", "応援する", "発見する", "工夫する", "話し合う", "見守る"],
+      dummies: ["美しい", "静かだ", "すばやい", "うれしい", "とても", "ゆっくり", "元気だ", "やさしい", "大きく", "さわやか", "たしかに", "もっと", "すごい", "あたたかい", "きびしい", "すてきな", "まじめだ", "おもいやり"]
+    },
+    {
+      name: "光や見た目の様子を表す言葉",
+      highlight: "光や見た目の様子",
+      targets: ["きらきら", "ぴかぴか", "まぶしい", "くっきり", "あざやか", "すきとおる", "かがやく", "まっしろ", "ぼんやり", "うっすら", "ぎらぎら", "ほのかに"],
+      dummies: ["ざあざあ", "ひそひそ", "おいしい", "あまい", "つよい", "はしる", "さけぶ", "たのしい", "くやしい", "重たい", "つめたい", "しずかに", "ていねいに", "急いで", "しっかり", "やさしく", "げんきに", "ゆっくり"]
+    },
+    {
+      name: "やさしい・あたたかい気持ちを表す言葉",
+      highlight: "やさしい・あたたかい気持ち",
+      targets: ["思いやり", "親切だ", "ほほえむ", "いたわる", "はげます", "寄り添う", "感謝する", "おだやか", "なごやか", "ぬくもり", "助け合う", "あたたかい"],
+      dummies: ["いじわる", "怒鳴る", "冷たい", "わがまま", "あらそう", "うたがう", "急ぐ", "はしる", "重い", "暗い", "かたい", "するどい", "けわしい", "はげしい", "さびしい", "こわい", "まぶしい", "うるさい"]
+    },
+    {
+      name: "かなしい・くやしい気持ちを表す言葉",
+      highlight: "かなしい・くやしい気持ち",
+      targets: ["しょんぼり", "がっかり", "くやしい", "なさけない", "涙が出る", "落ち込む", "さびしい", "せつない", "つらい", "ため息をつく", "めそめそ", "残念だ"],
+      dummies: ["わくわく", "うきうき", "うれしい", "たのしい", "にっこり", "ほっとする", "誇らしい", "晴れやか", "満足する", "ルンルン", "笑顔になる", "すてきだ", "元気だ", "さわやか", "あたたかい", "やさしい", "すごい", "おもしろい"]
+    },
+    {
+      name: "スピードや時間の進み方を表す言葉",
+      highlight: "スピードや時間の進み方",
+      targets: ["あっという間に", "すばやく", "のんびり", "ゆっくり", "急いで", "ただちに", "しだいに", "ついに", "いつの間にか", "たちまち", "じっくり", "さっと"],
+      dummies: ["きらきら", "ざあざあ", "ふわふわ", "重たい", "あまい", "冷たい", "赤い", "大きい", "丸い", "静かだ", "やさしい", "美しい", "元気だ", "うれしい", "悲しい", "強い", "弱い", "新しい"]
+    },
+    {
+      name: "もののさわり心地・質感を伝える言葉",
+      highlight: "さわり心地・質感",
+      targets: ["ふわふわ", "つるつる", "ざらざら", "さらさら", "ぷにぷに", "かちかち", "しっとり", "べたべた", "もちもち", "ふっくら", "すべすべ", "ごつごつ"],
+      dummies: ["わんわん", "ざあざあ", "きらきら", "ぴかぴか", "どきどき", "わくわく", "ゆっくり", "急いで", "たくさん", "とても", "しっかり", "はっきり", "うっかり", "こっそり", "ぐんぐん", "すやすや", "のろのろ", "にこにこ"]
+    },
+    {
+      name: "努力やがんばりを表す言葉",
+      highlight: "努力やがんばり",
+      targets: ["一生懸命", "コツコツと", "粘り強く", "全力で", "集中する", "くり返す", "あきらめない", "工夫する", "練習する", "挑戦する", "励む", "力を合わせる"],
+      dummies: ["なまける", "あきる", "わすれる", "ねむる", "あそぶ", "おどろく", "こわがる", "まよう", "うたがう", "いそぐ", "ころぶ", "わらう", "なく", "おこる", "さけぶ", "うたう", "たべる", "のむ"]
+    },
+    {
+      name: "自然や季節のようすを表す言葉",
+      highlight: "自然や季節のようす",
+      targets: ["さわやか", "うららか", "むし暑い", "肌寒い", "澄みわたる", "紅葉する", "芽吹く", "咲きほこる", "ふきあれる", "しとしと", "しんしんと", "ぽかぽか"],
+      dummies: ["えんぴつ", "つくえ", "黒板", "ランドセル", "計算する", "読書する", "走る", "食べる", "うれしい", "くやしい", "親切だ", "元気だ", "丸い", "四角い", "重い", "軽い", "新しい", "古い"]
+    }
+  ],
+
+  // 【高学年】小学5〜6年生向け（10テーマ）
+  high: [
+    {
+      name: "感情・心情を深く表現する言葉",
+      highlight: "感情・心情",
+      targets: ["胸が熱くなる", "感無量だ", "誇らしい", "歯がゆい", "心強い", "いたたまれない", "名残惜しい", "晴れ晴れとする", "葛藤する", "共感する", "達成感", "安堵する"],
+      dummies: ["分析する", "比較する", "検証する", "観察する", "記録する", "測定する", "計算する", "移動する", "運搬する", "建築する", "印刷する", "放送する", "修理する", "清掃する", "栽培する", "収穫する", "調理する", "販売する"]
+    },
+    {
+      name: "考え・議論を伝える論理的な言葉",
+      highlight: "考え・議論",
+      targets: ["主張する", "根拠", "比較する", "分析する", "結論", "共通点", "相違点", "要因", "課題", "解決策", "説得力", "客観的"],
+      dummies: ["ふわふわ", "きらきら", "ざあざあ", "わくわく", "にっこり", "すやすや", "のんびり", "ぽかぽか", "つるつる", "さらさら", "ぷにぷに", "もちもち", "うきうき", "ルンルン", "めそめそ", "しょんぼり", "びっくり", "どきどき"]
+    },
+    {
+      name: "情景や自然の美しさを描く言葉",
+      highlight: "情景や自然の美しさ",
+      targets: ["壮大だ", "鮮明だ", "静寂", "きらめく", "澄み渡る", "彩られる", "雄大だ", "幻想的", "荘厳だ", "うららか", "風情がある", "移ろう"],
+      dummies: ["騒がしい", "混乱する", "退屈だ", "面倒だ", "不潔だ", "危険だ", "貧弱だ", "粗末だ", "単純だ", "平凡だ", "退廃的", "殺風景", "単調だ", "窮屈だ", "不快だ", "乱雑だ", "稚拙だ", "無秩序"]
+    },
+    {
+      name: "人との関わり・社会性を表す言葉",
+      highlight: "人との関わり・社会性",
+      targets: ["尊重する", "信頼関係", "協力する", "貢献する", "配慮する", "受け継ぐ", "支え合う", "傾聴する", "連帯感", "思いやり", "誠実だ", "責任感"],
+      dummies: ["孤立する", "対立する", "無視する", "独占する", "批判する", "拒絶する", "軽視する", "裏切る", "妨害する", "依存する", "傲慢だ", "無責任", "冷淡だ", "排他的", "利己的", "不誠実", "怠惰だ", "横暴だ"]
+    },
+    {
+      name: "物事の進み方・変化を表す言葉",
+      highlight: "物事の進み方・変化",
+      targets: ["着実に", "急速に", "徐々に", "飛躍的に", "劇的に", "停滞する", "発展する", "普及する", "変化する", "定着する", "進行する", "転換する"],
+      dummies: ["美しい", "静かだ", "重い", "甘い", "冷たい", "赤い", "丸い", "高い", "広い", "深い", "硬い", "鋭い", "明るい", "暗い", "強い", "弱い", "新しい", "古い"]
+    },
+    {
+      name: "努力・挑戦・成長を表す言葉",
+      highlight: "努力・挑戦・成長",
+      targets: ["果敢に", "粘り強く", "克服する", "模索する", "切磋琢磨", "飛躍する", "研鑽する", "精進する", "挑む", "培う", "達成する", "自覚する"],
+      dummies: ["妥協する", "放棄する", "油断する", "怠ける", "後悔する", "萎縮する", "迷走する", "挫折する", "停滞する", "後退する", "安住する", "逃避する", "傲る", "焦る", "怯える", "嘆く", "悔やむ", "諦める"]
+    },
+    {
+      name: "文章のつなぎ・構成を整える言葉（接続語）",
+      highlight: "文章のつなぎ・接続語",
+      targets: ["したがって", "なぜなら", "一方で", "つまり", "ところが", "さらに", "たとえば", "しかし", "その結果", "それゆえ", "ちなみに", "要するに"],
+      dummies: ["走った", "美しい", "静かに", "学校", "地球", "歴史", "科学", "音楽", "友情", "未来", "希望", "努力", "成功", "失敗", "発見", "発明", "観察", "実験"]
+    },
+    {
+      name: "動作や様子をくわしく飾る副詞",
+      highlight: "動作や様子を飾る副詞",
+      targets: ["真剣に", "冷静に", "的確に", "慎重に", "大胆に", "効率的に", "円滑に", "丹念に", "率直に", "謙虚に", "堂々と", "粛々と"],
+      dummies: ["机", "椅子", "鉛筆", "黒板", "教科書", "図書館", "体育館", "運動場", "教室", "廊下", "階段", "窓", "扉", "屋根", "壁", "床", "天井", "時計"]
+    },
+    {
+      name: "科学・探究・調べ学習で使う言葉",
+      highlight: "科学・探究・調べ学習",
+      targets: ["仮説", "検証する", "観察する", "測定する", "要因", "現象", "傾向", "規則性", "結果", "考察する", "データ", "実験"],
+      dummies: ["物語", "詩", "俳句", "短歌", "小説", "登場人物", "あらすじ", "作者", "情景", "比喩", "擬人法", "倒置法", "朗読", "感想文", "日記", "手紙", "作文", "伝説"]
+    },
+    {
+      name: "心の強さや前向きな姿勢を表す言葉",
+      highlight: "心の強さ・前向きな姿勢",
+      targets: ["希望", "決意", "信念", "勇気", "情熱", "向上心", "好奇心", "探究心", "自律", "前向き", "不屈", "意欲的"],
+      dummies: ["絶望", "不安", "恐怖", "疑惑", "嫉妬", "憎悪", "悲観", "無気力", "臆病", "消極的", "怠慢", "執着", "迷い", "焦り", "怒り", "悲しみ", "恨み", "諦め"]
+    }
+  ]
+};
+
+const GRADE_LABELS = {
+  low: "低学年",
+  mid: "中学年",
+  high: "高学年"
+};
+
+let currentGrade = null; // 初期設定ではどれも選ばれていない状態
+let activeGameGrade = null; // プレイ中のコースを保持（「つづきをする」用）
+let hasSavedProgress = false; // 途中経過があるかどうか
+let currentPosition = 0; // 0 〜 50
+let currentStage = 1;
+let stagesClearedCount = 0; // 3ステージクリアごとにボーナスステージ突入
+let totalPoints = 0;
+let timer = 120;
+let timerInterval = null;
+let soundEnabled = true;
+
+let sentenceDeck = [];
+let currentQuestions = [];
+let usedHintsInStage = [false, false, false, false, false];
+let selectedCard = null;
+let audioCtx = null;
+let trackCoords = [];
+
+let draggedCard = null;
+let touchClone = null;
+let touchStartX = 0;
+let touchStartY = 0;
+
+function initTrack() {
+  const container = document.getElementById('game-container');
+  const trackContainer = document.getElementById('track-container');
+  trackContainer.innerHTML = '';
+  trackCoords = [];
+
+  const rect = container.getBoundingClientRect();
+  const containerW = rect.width || 1200;
+  const containerH = rect.height || 675;
+
+  const marginX = 26;
+  const marginY = 26;
+
+  const trackW = containerW - marginX * 2;
+  const trackH = containerH - marginY * 2;
+
+  const totalPerimeter = 2 * (trackW + trackH);
+  const totalTiles = 51;
+  const step = totalPerimeter / totalTiles;
+
+  const xStart = trackW * 0.52;
+
+  for (let i = 0; i < totalTiles; i++) {
+    const dist = i * step;
+    let x, y;
+
+    if (dist <= trackW - xStart) {
+      x = xStart + dist;
+      y = trackH;
+    } else if (dist <= (trackW - xStart) + trackH) {
+      const d = dist - (trackW - xStart);
+      x = trackW;
+      y = trackH - d;
+    } else if (dist <= (trackW - xStart) + trackH + trackW) {
+      const d = dist - ((trackW - xStart) + trackH);
+      x = trackW - d;
+      y = 0;
+    } else if (dist <= (trackW - xStart) + 2 * trackH + trackW) {
+      const d = dist - ((trackW - xStart) + trackH + trackW);
+      x = 0;
+      y = d;
+    } else {
+      const d = dist - ((trackW - xStart) + 2 * trackH + trackW);
+      x = d;
+      y = trackH;
+    }
+
+    const pctX = ((x + marginX) / containerW) * 100;
+    const pctY = ((y + marginY) / containerH) * 100;
+
+    trackCoords.push({ x: pctX, y: pctY });
+
+    const tile = document.createElement('div');
+    tile.className = 'track-tile';
+    tile.id = `tile-${i}`;
+    tile.style.left = `${pctX}%`;
+    tile.style.top = `${pctY}%`;
+
+    if (i === 0) {
+      tile.classList.add('start-tile');
+      tile.innerText = 'START';
+    } else if (i === 50) {
+      tile.classList.add('goal-tile');
+      tile.innerText = 'GOAL';
+    } else {
+      tile.innerText = i;
+    }
+    trackContainer.appendChild(tile);
+  }
+
+  updateTrackUI();
+}
+
+function updateTrackUI() {
+  for (let i = 0; i < 51; i++) {
+    const tile = document.getElementById(`tile-${i}`);
+    if (!tile) continue;
+
+    tile.classList.remove('active-green', 'active-yellow');
+
+    let isPassed = i < currentPosition && i > 0;
+    let isHead = (i === currentPosition && i > 0 && i < 50);
+
+    if (isPassed) {
+      tile.classList.add('active-yellow');
+    } else if (isHead) {
+      tile.classList.add('active-green');
+    }
+  }
+}
+
+function resetDeck() {
+  const pool = SENTENCE_DATABASE[currentGrade] || SENTENCE_DATABASE.mid;
+  sentenceDeck = [...pool].sort(() => Math.random() - 0.5);
+}
+
+function getNext5Questions() {
+  let selected = [];
+  let usedAnswers = new Set();
+
+  for (let count = 0; count < 5; count++) {
+    if (sentenceDeck.length === 0) {
+      resetDeck();
+    }
+    let pickedIndex = sentenceDeck.findIndex(item => !usedAnswers.has(item.answer));
+    if (pickedIndex === -1) pickedIndex = 0;
+
+    const item = sentenceDeck.splice(pickedIndex, 1)[0];
+    usedAnswers.add(item.answer);
+    selected.push(item);
+  }
+
+  return selected;
+}
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
+function cleanupTouchState() {
+  if (touchClone) {
+    touchClone.remove();
+    touchClone = null;
+  }
+  if (draggedCard) {
+    draggedCard.style.opacity = '1';
+    draggedCard = null;
+  }
+  document.querySelectorAll('.touch-drag-clone').forEach(el => el.remove());
+}
+
+function startStage() {
+  cleanupTouchState();
+  clearInterval(timerInterval);
+  timer = 120;
+  selectedCard = null;
+  usedHintsInStage = [false, false, false, false, false];
+  hasSavedProgress = true;
+  activeGameGrade = currentGrade;
+  
+  document.getElementById('level-badge').innerText = GRADE_LABELS[currentGrade];
+  document.getElementById('timer-display').innerText = `⏱ ${formatTime(timer)}`;
+  document.getElementById('stage-display').innerText = `🚩 STAGE ${currentStage}`;
+
+  currentQuestions = getNext5Questions();
+  renderProblemRows();
+  renderCards();
+
+  triggerStageZoomIn(`STAGE ${currentStage}`, () => {
+    startStageTimer();
+  });
+}
+
+function startStageTimer() {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timer--;
+    document.getElementById('timer-display').innerText = `⏱ ${formatTime(timer)}`;
+    if (timer <= 0) {
+      clearInterval(timerInterval);
+      handleTimeUp();
+    }
+  }, 1000);
+}
+
+function triggerStageZoomIn(text, onComplete) {
+  const overlay = document.getElementById('stage-zoom-overlay');
+  const zoomText = document.getElementById('stage-zoom-text');
+
+  zoomText.innerText = text;
+  zoomText.classList.remove('animate');
+  overlay.classList.add('show');
+
+  playSE('zoomIn');
+
+  setTimeout(() => {
+    zoomText.classList.add('animate');
+  }, 20);
+
+  setTimeout(() => {
+    overlay.classList.remove('show');
+    zoomText.classList.remove('animate');
+    if (onComplete) onComplete();
+  }, 1100);
+}
+
+function rollUpPoints(targetPoints, onComplete) {
+  const display = document.getElementById('points-display');
+  display.classList.add('rolling');
+
+  let currentVal = totalPoints;
+  const diff = targetPoints - totalPoints;
+  
+  if (diff <= 0) {
+    display.innerText = `⭐ ${targetPoints} pt`;
+    display.classList.remove('rolling');
+    totalPoints = targetPoints;
+    if (onComplete) onComplete();
+    return;
+  }
+
+  const steps = Math.min(30, diff);
+  const increment = diff / steps;
+  let stepCount = 0;
+
+  const interval = setInterval(() => {
+    stepCount++;
+    currentVal += increment;
+    const roundVal = Math.round(currentVal);
+    display.innerText = `⭐ ${roundVal} pt`;
+    playSE('rollup');
+
+    if (stepCount >= steps) {
+      clearInterval(interval);
+      totalPoints = targetPoints;
+      display.innerText = `⭐ ${totalPoints} pt`;
+      display.classList.remove('rolling');
+      if (onComplete) onComplete();
+    }
+  }, 35);
+}
+
+function renderProblemRows() {
+  const list = document.getElementById('sentence-list');
+  list.innerHTML = '';
+
+  currentQuestions.forEach((item, rowIndex) => {
+    const row = document.createElement('div');
+    row.className = 'sentence-row';
+    row.id = `sentence-row-${rowIndex}`;
+
+    const content = document.createElement('div');
+    content.className = 'sentence-content';
+
+    if (item.before) {
+      const beforeSpan = document.createElement('span');
+      beforeSpan.className = 'sentence-part';
+      beforeSpan.innerText = item.before;
+      content.appendChild(beforeSpan);
+    }
+
+    const slot = document.createElement('div');
+    slot.className = 'word-drop-slot';
+    slot.dataset.rowIndex = rowIndex;
+    slot.ondragover = allowDrop;
+    slot.ondrop = dropToSlot;
+    slot.onclick = () => handleSlotClick(slot);
+    content.appendChild(slot);
+
+    if (item.after) {
+      const afterSpan = document.createElement('span');
+      afterSpan.className = 'sentence-part';
+      afterSpan.innerText = item.after;
+      content.appendChild(afterSpan);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'row-actions';
+
+    const posTag = document.createElement('span');
+    posTag.className = 'pos-tag';
+    posTag.innerText = item.pos;
+
+    const hintBtn = document.createElement('button');
+    hintBtn.className = 'hint-btn';
+    hintBtn.innerText = 'ヒント';
+    hintBtn.onclick = (e) => {
+      e.stopPropagation();
+      showRowHint(rowIndex, hintBtn);
+    };
+
+    actions.appendChild(posTag);
+    actions.appendChild(hintBtn);
+
+    row.appendChild(content);
+    row.appendChild(actions);
+    list.appendChild(row);
+  });
+}
+
+function showRowHint(rowIndex, btn) {
+  if (usedHintsInStage[rowIndex]) return;
+  usedHintsInStage[rowIndex] = true;
+  btn.classList.add('used');
+  btn.innerText = 'ヒント済';
+  btn.disabled = true;
+
+  const targetQuestion = currentQuestions[rowIndex];
+  const slot = document.querySelector(`.word-drop-slot[data-row-index="${rowIndex}"]`);
+  
+  if (slot && !slot.querySelector('.hint-text')) {
+    const hintSpan = document.createElement('span');
+    hintSpan.className = 'hint-text';
+    // 頭文字（最初の1文字）を表示
+    hintSpan.innerText = `${targetQuestion.answer.charAt(0)}〇〇`;
+    slot.appendChild(hintSpan);
+  }
+
+  playSE('click');
+}
+
+function returnCardToPool(card) {
+  if (!card) return;
+  const originalSlot = document.getElementById(card.dataset.poolSlotId);
+  if (originalSlot) {
+    originalSlot.appendChild(card);
+  } else {
+    document.getElementById('card-pool').appendChild(card);
+  }
+}
+
+function renderCards() {
+  cleanupTouchState();
+  const pool = document.getElementById('card-pool');
+  pool.innerHTML = '';
+
+  let wordsList = currentQuestions.map(q => q.answer);
+  // フィッシャー・イェーツのシャッフルで全位置が均等にランダムになるよう並べ替え
+  for (let i = wordsList.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [wordsList[i], wordsList[j]] = [wordsList[j], wordsList[i]];
+  }
+  // 1問目の答えが一番上に連続して来すぎないよう、先頭と一致した場合は再シャッフル
+  if (wordsList.length > 1 && wordsList[0] === currentQuestions[0].answer && Math.random() < 0.7) {
+    const swapIdx = Math.floor(Math.random() * (wordsList.length - 1)) + 1;
+    [wordsList[0], wordsList[swapIdx]] = [wordsList[swapIdx], wordsList[0]];
+  }
+
+  wordsList.forEach((word, i) => {
+    const slot = document.createElement('div');
+    slot.className = 'pool-slot';
+    slot.id = `pool-slot-${i}`;
+
+    const card = document.createElement('div');
+    card.className = 'word-card';
+    card.innerText = word;
+    card.id = `card-${i}`;
+    card.dataset.poolSlotId = `pool-slot-${i}`;
+    card.draggable = true;
+
+    card.ondragstart = (e) => {
+      e.dataTransfer.setData('text', e.target.id);
+      selectCard(card);
+      playSE('click');
+    };
+
+    card.onclick = (e) => {
+      e.stopPropagation();
+      if (card.classList.contains('correct')) return;
+      selectCard(card);
+      playSE('click');
+    };
+
+    addTouchEvents(card);
+
+    slot.appendChild(card);
+    pool.appendChild(slot);
+  });
+}
+
+function addTouchEvents(card) {
+  const onTouchStart = (e) => {
+    if (card.classList.contains('correct')) return;
+    if (e.touches.length > 1) {
+      e.preventDefault();
+      cleanupTouchState();
+      return;
+    }
+    e.preventDefault();
+
+    cleanupTouchState();
+
+    const touch = e.touches[0];
+    draggedCard = card;
+    selectCard(card);
+    playSE('click');
+
+    const rect = card.getBoundingClientRect();
+    touchClone = card.cloneNode(true);
+    touchClone.classList.add('touch-drag-clone');
+    touchClone.style.position = 'fixed';
+    touchClone.style.left = `${rect.left}px`;
+    touchClone.style.top = `${rect.top}px`;
+    touchClone.style.width = `${rect.width}px`;
+    touchClone.style.height = `${rect.height}px`;
+    touchClone.style.zIndex = '1000';
+    touchClone.style.pointerEvents = 'none';
+    touchClone.style.boxShadow = '0 10px 25px rgba(202, 138, 4, 0.35)';
+    touchClone.style.transform = 'scale(1.08)';
+    document.body.appendChild(touchClone);
+
+    touchStartX = touch.clientX - rect.left;
+    touchStartY = touch.clientY - rect.top;
+    card.style.opacity = '0.3';
+  };
+
+  const onTouchMove = (e) => {
+    if (!draggedCard || !touchClone) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    touchClone.style.left = `${touch.clientX - touchStartX}px`;
+    touchClone.style.top = `${touch.clientY - touchStartY}px`;
+  };
+
+  const onTouchEnd = (e) => {
+    if (!draggedCard) return;
+    const touch = e.changedTouches[0];
+    const currentCard = draggedCard;
+
+    cleanupTouchState();
+
+    const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (dropTarget) {
+      const slot = dropTarget.closest('.word-drop-slot');
+      const pool = dropTarget.closest('#card-pool-container, #card-pool');
+
+      if (slot) {
+        handleSlotDrop(currentCard, slot);
+      } else if (pool) {
+        returnCardToPool(currentCard);
+        document.querySelectorAll('.word-drop-slot').forEach(s => {
+          if (!s.querySelector('.word-card')) s.classList.remove('filled');
+        });
+        selectCard(null);
+      }
+    }
+  };
+
+  const onTouchCancel = () => {
+    cleanupTouchState();
+  };
+
+  card.addEventListener('touchstart', onTouchStart, { passive: false });
+  card.addEventListener('touchmove', onTouchMove, { passive: false });
+  card.addEventListener('touchend', onTouchEnd);
+  card.addEventListener('touchcancel', onTouchCancel);
+}
+
+function handleSlotDrop(card, slot) {
+  const existingCard = slot.querySelector('.word-card');
+  if (existingCard && existingCard !== card) {
+    if (!existingCard.classList.contains('correct')) {
+      returnCardToPool(existingCard);
+    } else {
+      return;
+    }
+  }
+  slot.appendChild(card);
+  slot.classList.add('filled');
+  selectCard(null);
+  playSE('click');
+  checkRowCompletion(slot.dataset.rowIndex);
+}
+
+function selectCard(card) {
+  if (selectedCard) {
+    selectedCard.classList.remove('selected');
+  }
+  if (selectedCard === card) {
+    selectedCard = null;
+    return;
+  }
+  selectedCard = card;
+  if (card) {
+    card.classList.add('selected');
+  }
+}
+
+function handleSlotClick(slot) {
+  const existingCard = slot.querySelector('.word-card');
+  if (existingCard) {
+    if (!existingCard.classList.contains('correct')) {
+      returnCardToPool(existingCard);
+      slot.classList.remove('filled');
+      playSE('click');
+      if (selectedCard === existingCard) selectCard(null);
+    }
+  } else if (selectedCard) {
+    handleSlotDrop(selectedCard, slot);
+  }
+}
+
+function allowDrop(e) { e.preventDefault(); }
+
+function dropToSlot(e) {
+  e.preventDefault();
+  const cardId = e.dataTransfer.getData('text');
+  const card = document.getElementById(cardId);
+  const targetSlot = e.currentTarget;
+
+  if (!card) return;
+  handleSlotDrop(card, targetSlot);
+}
+
+function dropToPool(e) {
+  e.preventDefault();
+  const cardId = e.dataTransfer.getData('text');
+  const card = document.getElementById(cardId);
+  if (card) {
+    returnCardToPool(card);
+    document.querySelectorAll('.word-drop-slot').forEach(slot => {
+      if (!slot.querySelector('.word-card')) slot.classList.remove('filled');
+    });
+    selectCard(null);
+  }
+}
+
+function checkRowCompletion(rowIndex) {
+  const targetQuestion = currentQuestions[rowIndex];
+  const slot = document.querySelector(`.word-drop-slot[data-row-index="${rowIndex}"]`);
+  const card = slot ? slot.querySelector('.word-card') : null;
+
+  if (!card) return;
+
+  if (card.innerText === targetQuestion.answer) {
+    playSE('correct');
+    card.ondragstart = null;
+    card.onclick = null;
+    card.classList.remove('selected');
+    card.classList.add('correct');
+
+    const rowEl = document.getElementById(`sentence-row-${rowIndex}`);
+    if (rowEl) rowEl.classList.add('row-solved');
+
+    // 1問正解するごとにすごろくを進める（ヒントなし2マス、ヒントあり1マス）
+    const tilesToAdvance = usedHintsInStage[rowIndex] ? 1 : 2;
+    advancePosition(tilesToAdvance);
+    checkAllCompleted();
+  } else {
+    playSE('wrong');
+    setTimeout(() => {
+      if (card && !card.classList.contains('correct')) {
+        returnCardToPool(card);
+        slot.classList.remove('filled');
+      }
+      penalizePosition(2);
+    }, 350);
+  }
+}
+
+function checkAllCompleted() {
+  const allSlots = document.querySelectorAll('.word-drop-slot');
+  let completedCount = 0;
+  allSlots.forEach(s => {
+    const card = s.querySelector('.word-card');
+    if (card && card.classList.contains('correct')) completedCount++;
+  });
+
+  if (completedCount === 5) {
+    clearInterval(timerInterval);
+    playSE('milestone');
+    triggerConfetti();
+    
+    stagesClearedCount++;
+    const remainingSec = Math.max(0, timer);
+    const stageGainedPoints = 50 + remainingSec;
+    const targetPoints = totalPoints + stageGainedPoints;
+
+    const isBonusNext = (stagesClearedCount % 3 === 0);
+    const nextMsg = isBonusNext
+      ? `<p style="margin-top: 8px; color: #fef08a; font-weight: bold;">✨ 3ステージクリア達成！特別ボーナスステージへ突入！</p>`
+      : '';
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+      <div class="stage-clear-banner">
+        <h2>🎉 5問全問クリア！</h2>
+        <p style="margin-bottom: 4px;">⭐ クリア 50pt ＋ 残り${remainingSec}秒 (${remainingSec}pt) ＝ <strong>＋${stageGainedPoints}pt</strong> 獲得！</p>
+        ${nextMsg}
+      </div>
+    `;
+    document.getElementById('game-container').appendChild(modal);
+
+    setTimeout(() => {
+      modal.remove();
+      currentStage++;
+      
+      rollUpPoints(targetPoints, () => {
+        if (currentPosition < 50) {
+          checkSpecialStageOrNext();
+        }
+      });
+    }, 1800);
+  }
+}
+
+function checkSpecialStageOrNext() {
+  // 1ステージ（5問入り）を3ステージクリアするごとにボーナスステージへ
+  if (stagesClearedCount > 0 && stagesClearedCount % 3 === 0) {
+    startSpecialStage();
+  } else {
+    startStage();
+  }
+}
+
+async function advancePosition(count) {
+  for (let step = 0; step < count; step++) {
+    if (currentPosition >= 50) break;
+
+    const prevTile = document.getElementById(`tile-${currentPosition}`);
+    if (prevTile && currentPosition > 0) {
+      prevTile.classList.remove('active-green');
+      prevTile.classList.add('active-yellow');
+    }
+
+    currentPosition++;
+
+    const currTile = document.getElementById(`tile-${currentPosition}`);
+    if (currTile) {
+      if (currentPosition < 50) {
+        currTile.classList.add('active-green');
+      } else {
+        currTile.classList.add('active-yellow');
+      }
+      currTile.classList.remove('tile-pop');
+      void currTile.offsetWidth;
+      currTile.classList.add('tile-pop');
+    }
+
+    playSE('click');
+    await new Promise(resolve => setTimeout(resolve, 380));
+  }
+
+  updateTrackUI();
+
+  if (currentPosition >= 50) {
+    currentPosition = 50;
+    clearInterval(timerInterval);
+    
+    triggerGoalOrbitAnimation(() => {
+      showGoalBonusBanner(() => {
+        showGoalModal();
+      });
+    });
+  }
+}
+
+async function penalizePosition(count) {
+  for (let step = 0; step < count; step++) {
+    if (currentPosition <= 0) break;
+
+    const currTile = document.getElementById(`tile-${currentPosition}`);
+    if (currTile) {
+      currTile.classList.remove('active-yellow', 'active-green', 'tile-pop');
+    }
+
+    currentPosition--;
+
+    const prevTile = document.getElementById(`tile-${currentPosition}`);
+    if (prevTile && currentPosition > 0) {
+      prevTile.classList.remove('active-yellow');
+      prevTile.classList.add('active-green');
+      prevTile.classList.remove('tile-pop');
+      void prevTile.offsetWidth;
+      prevTile.classList.add('tile-pop');
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+
+  updateTrackUI();
+}
+
+function showGoalBonusBanner(onComplete) {
+  playSE('fanfare');
+  triggerConfetti();
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="bonus-banner">
+      <h2>🎁 完走ボーナス！</h2>
+      <p style="font-size: 16px; color: #fef3c7;">外周50マス1周達成報酬！</p>
+      <div class="bonus-amount">+100 BONUS PT</div>
+    </div>
+  `;
+  document.getElementById('game-container').appendChild(modal);
+
+  const targetPoints = totalPoints + 100;
+
+  setTimeout(() => {
+    rollUpPoints(targetPoints, () => {
+      setTimeout(() => {
+        modal.remove();
+        if (onComplete) onComplete();
+      }, 500);
+    });
+  }, 1000);
+}
+
+function triggerGoalOrbitAnimation(onComplete) {
+  playSE('goal');
+  triggerConfetti();
+
+  let lapCount = 0;
+  let currentIndex = 0;
+  const totalTiles = 51;
+
+  const orbitInterval = setInterval(() => {
+    document.querySelectorAll('.track-tile').forEach(t => t.classList.remove('active-orbit'));
+
+    const tile = document.getElementById(`tile-${currentIndex}`);
+    if (tile) {
+      tile.classList.add('active-orbit');
+      playSE('orbit');
+    }
+
+    currentIndex++;
+    if (currentIndex >= totalTiles) {
+      currentIndex = 0;
+      lapCount++;
+    }
+
+    if (lapCount >= 2) {
+      clearInterval(orbitInterval);
+      document.querySelectorAll('.track-tile').forEach(t => t.classList.remove('active-orbit'));
+      if (onComplete) onComplete();
+    }
+  }, 30);
+}
+
+function showGoalModal() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-card">
+      <h2 class="win">🏆 ゴール達成！</h2>
+      <p>おめでとうございます！外周50マス完走！<br>現在ポイント: <strong>${totalPoints} pt</strong></p>
+      <div class="modal-btns">
+        <button class="btn btn-next" onclick="nextStageFromGoal(this)">つぎのステージへ</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('game-container').appendChild(modal);
+}
+
+function nextStageFromGoal(btn) {
+  cleanupTouchState();
+  btn.closest('.modal-overlay').remove();
+  currentPosition = 0;
+  updateTrackUI();
+  checkSpecialStageOrNext();
+}
+
+function startSpecialStage() {
+  cleanupTouchState();
+  // 学年コースに応じたボーナス問題テーマを使用
+  const themePool = BONUS_THEMES_BY_GRADE[currentGrade] || BONUS_THEMES_BY_GRADE.mid;
+  const themeObj = themePool[Math.floor(Math.random() * themePool.length)];
+  
+  // 25枚のパネルの中に正解の言葉10個＋ダミー15個を配置
+  const targetCount = 10;
+  const shuffledTargets = [...themeObj.targets].sort(() => Math.random() - 0.5).slice(0, targetCount);
+  const shuffledDummies = [...themeObj.dummies].sort(() => Math.random() - 0.5).slice(0, 25 - targetCount);
+  
+  let panelsData = [
+    ...shuffledTargets.map(w => ({ word: w, isTarget: true })),
+    ...shuffledDummies.map(w => ({ word: w, isTarget: false }))
+  ].sort(() => Math.random() - 0.5);
+
+  let foundCount = 0;
+  let specialTimer = 30;
+  let specialTimerInterval = null;
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  const highlightedTheme = `<span class="theme-highlight">「${themeObj.highlight || themeObj.name}」</span>`;
+  const promptText = currentGrade === 'low'
+    ? `${highlightedTheme} の ことばを えらぼう！`
+    : `${highlightedTheme} の言葉を選ぼう！`;
+  const remUnit = currentGrade === 'low' ? 'こ' : '個';
+  const secUnit = currentGrade === 'low' ? 'びょう' : '秒';
+
+  modal.innerHTML = `
+    <div class="special-stage-container">
+      <div class="special-header">
+        <div class="special-instruction">${promptText}</div>
+        <div class="special-status-group">
+          <div class="special-count-box">あと <span id="special-rem-count">${targetCount}</span>${remUnit}</div>
+          <div class="special-timer" id="special-timer-display">⏱ ${specialTimer}${secUnit}</div>
+        </div>
+      </div>
+      <div class="special-grid" id="special-grid"></div>
+    </div>
+  `;
+  document.getElementById('game-container').appendChild(modal);
+
+  const grid = modal.querySelector('#special-grid');
+
+  panelsData.forEach((item) => {
+    const btn = document.createElement('div');
+    btn.className = 'special-panel';
+    btn.innerText = item.word;
+
+    btn.onclick = () => {
+      if (btn.classList.contains('hit') || btn.classList.contains('miss')) return;
+
+      if (item.isTarget) {
+        btn.classList.add('hit');
+        playSE('correct');
+        foundCount++;
+        modal.querySelector('#special-rem-count').innerText = targetCount - foundCount;
+
+        if (foundCount >= targetCount) {
+          endSpecialStage(true);
+        }
+      } else {
+        btn.classList.add('miss');
+        playSE('wrong');
+        setTimeout(() => btn.classList.remove('miss'), 400);
+      }
+    };
+
+    grid.appendChild(btn);
+  });
+
+  playSE('fanfare');
+
+  specialTimerInterval = setInterval(() => {
+    specialTimer--;
+    const tDisp = modal.querySelector('#special-timer-display');
+    if (tDisp) tDisp.innerText = `⏱ ${specialTimer}${secUnit}`;
+
+    if (specialTimer <= 0) {
+      endSpecialStage(false);
+    }
+  }, 1000);
+
+  function endSpecialStage(allFound) {
+    clearInterval(specialTimerInterval);
+    playSE('milestone');
+    triggerConfetti();
+
+    const hitPoints = foundCount * 15;
+    const timePoints = Math.max(0, specialTimer) * 2;
+    const gained = hitPoints + timePoints;
+    const targetP = totalPoints + gained;
+
+    const resultModal = document.createElement('div');
+    resultModal.className = 'modal-overlay';
+    resultModal.innerHTML = `
+      <div class="stage-clear-banner">
+        <h2>${allFound ? '🎊 コンプリート達成！' : '⏱ 特別ステージ終了！'}</h2>
+        <p>正解数: <strong>${foundCount} / ${targetCount}</strong> (${hitPoints}pt)</p>
+        <p>残り時間ボーナス: <strong>${specialTimer}秒</strong> (${timePoints}pt)</p>
+        <h3 style="font-size: 24px; color: #fef08a; margin-top: 10px;">合計 ＋${gained} pt 獲得！</h3>
+      </div>
+    `;
+    modal.remove();
+    document.getElementById('game-container').appendChild(resultModal);
+
+    setTimeout(() => {
+      resultModal.remove();
+      rollUpPoints(targetP, () => {
+        startStage();
+      });
+    }, 2200);
+  }
+}
+
+function handleTimeUp() {
+  playSE('timeup');
+  penalizePosition(5);
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-card">
+      <h2>⏰ タイムアップ！</h2>
+      <p>時間が切れました！マスが 5 つ戻ります。</p>
+      <div class="modal-btns">
+        <button class="btn btn-retry" onclick="retryStage(this)">もう一度挑戦</button>
+        <button class="btn btn-quit" onclick="resetGame(this)">最初から</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('game-container').appendChild(modal);
+}
+
+function retryStage(btn) {
+  cleanupTouchState();
+  btn.closest('.modal-overlay').remove();
+  startStage();
+}
+
+function openCourseMenu() {
+  clearInterval(timerInterval);
+  cleanupTouchState();
+  // トップ画面に戻る際、選択状態は一度リセットして選び直せるようにする（続きボタンで復帰可能）
+  currentGrade = null;
+  showStartModal();
+}
+
+function resumePreviousCourse(btn) {
+  initAudio();
+  const modal = btn.closest('.modal-overlay');
+  if (modal) modal.remove();
+  if (activeGameGrade) {
+    currentGrade = activeGameGrade;
+    document.getElementById('level-badge').innerText = GRADE_LABELS[currentGrade];
+    startStageTimer();
+  }
+}
+
+function resetGame(btn) {
+  cleanupTouchState();
+  if (btn) btn.closest('.modal-overlay').remove();
+  currentGrade = null;
+  activeGameGrade = null;
+  hasSavedProgress = false;
+  currentPosition = 0;
+  currentStage = 1;
+  stagesClearedCount = 0;
+  totalPoints = 0;
+  document.getElementById('points-display').innerText = `⭐ 0 pt`;
+  updateTrackUI();
+  showStartModal();
+}
+
+function selectGrade(grade, btnEl) {
+  currentGrade = grade;
+  playSE('click');
+  document.querySelectorAll('.grade-btn').forEach(b => b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+
+  // どれか1つを選んだら GAME START が点灯してタップできるようにする
+  const startBtn = document.getElementById('start-play-btn');
+  if (startBtn) {
+    startBtn.disabled = false;
+  }
+}
+
+function showStartModal() {
+  cleanupTouchState();
+  const existingModal = document.getElementById('start-modal');
+  if (existingModal) existingModal.remove();
+
+  const resumeButtonHTML = (hasSavedProgress && activeGameGrade)
+    ? `<button class="resume-play-btn" onclick="resumePreviousCourse(this)">つづきをする（${GRADE_LABELS[activeGameGrade]}）</button>`
+    : '';
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'start-modal';
+  modal.innerHTML = `
+    <div class="start-hero-card">
+      <div class="puzzle-piece-container">
+        <svg viewBox="0 0 120 120" width="82" height="82">
+          <defs>
+            <linearGradient id="puzzleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#fef9c3" />
+              <stop offset="45%" stop-color="#facc15" />
+              <stop offset="100%" stop-color="#f59e0b" />
+            </linearGradient>
+            <filter id="puzzleGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#facc15" flood-opacity="0.85"/>
+            </filter>
+          </defs>
+          <path d="
+            M 36,36 
+            L 52,36 
+            C 48,22 42,14 60,14 
+            C 78,14 72,22 68,36 
+            L 84,36 
+            L 84,52 
+            C 98,48 106,42 106,60 
+            C 106,78 98,72 84,68 
+            L 84,84 
+            L 68,84 
+            C 72,98 78,106 60,106 
+            C 42,106 48,98 52,84 
+            L 36,84 
+            L 36,68 
+            C 50,72 58,78 58,60 
+            C 58,42 50,48 36,52 
+            Z" 
+            fill="url(#puzzleGrad)" stroke="#ffffff" stroke-width="4" stroke-linejoin="round" filter="url(#puzzleGlow)"/>
+        </svg>
+      </div>
+      <div class="start-hero-badge">作文力アップゲーム</div>
+      <h1 class="start-hero-title">ぴったりことば</h1>
+      <p class="start-hero-desc">
+        作文にぴったりなことばをえらぼう！
+      </p>
+      <div class="grade-selector">
+        <button class="grade-btn ${currentGrade === 'low' ? 'active' : ''}" onclick="selectGrade('low', this)">【低学年】</button>
+        <button class="grade-btn ${currentGrade === 'mid' ? 'active' : ''}" onclick="selectGrade('mid', this)">【中学年】</button>
+        <button class="grade-btn ${currentGrade === 'high' ? 'active' : ''}" onclick="selectGrade('high', this)">【高学年】</button>
+      </div>
+      <div class="start-action-row">
+        <button id="start-play-btn" class="start-play-btn" onclick="startGameFromModal(this)" ${currentGrade ? '' : 'disabled'}>GAME START</button>
+        ${resumeButtonHTML}
+      </div>
+    </div>
+  `;
+  document.getElementById('game-container').appendChild(modal);
+}
+
+function startGameFromModal(btn) {
+  if (!currentGrade) return;
+  initAudio();
+  const modal = btn.closest('.modal-overlay');
+  if (modal) modal.remove();
+  currentPosition = 0;
+  currentStage = 1;
+  stagesClearedCount = 0;
+  totalPoints = 0;
+  document.getElementById('points-display').innerText = `⭐ 0 pt`;
+  updateTrackUI();
+  resetDeck();
+  startStage();
+}
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  const btn = document.getElementById('sound-btn');
+  if (btn) {
+    btn.innerText = soundEnabled ? '🔊 ON' : '🔇 OFF';
+  }
+}
+
+function playSE(type) {
+  if (!soundEnabled) return;
+  initAudio();
+  if (!audioCtx) return;
+
+  const now = audioCtx.currentTime;
+
+  try {
+    if (type === 'click') {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.05);
+    } else if (type === 'correct') {
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+        gain.gain.setValueAtTime(0.2, now + idx * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.2);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now + idx * 0.08);
+        osc.stop(now + idx * 0.08 + 0.2);
+      });
+    } else if (type === 'wrong') {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.linearRampToValueAtTime(120, now + 0.25);
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    } else if (type === 'zoomIn') {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.exponentialRampToValueAtTime(900, now + 0.3);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    } else if (type === 'rollup') {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800 + Math.random() * 200, now);
+      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.03);
+    } else if (type === 'milestone' || type === 'fanfare' || type === 'goal') {
+      const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+      notes.forEach((freq, idx) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.1);
+        gain.gain.setValueAtTime(0.25, now + idx * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.1 + 0.4);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now + idx * 0.1);
+        osc.stop(now + idx * 0.1 + 0.4);
+      });
+    } else if (type === 'orbit') {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(400 + Math.random() * 600, now);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.005, now + 0.05);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.05);
+    } else if (type === 'timeup') {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(250, now);
+      osc.frequency.linearRampToValueAtTime(100, now + 0.5);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.5);
+    }
+  } catch (e) {
+    // Web Audioエラーの自動無視
+  }
+}
+
+function triggerConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  
+  canvas.width = canvas.parentElement.clientWidth;
+  canvas.height = canvas.parentElement.clientHeight;
+
+  const particles = [];
+  const colors = ['#facc15', '#fde047', '#f59e0b', '#38bdf8', '#34d399', '#f43f5e'];
+
+  for (let i = 0; i < 70; i++) {
+    particles.push({
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      vx: (Math.random() - 0.5) * 14,
+      vy: (Math.random() - 0.8) * 14,
+      size: Math.random() * 8 + 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rotation: Math.random() * 360,
+      vRot: (Math.random() - 0.5) * 10,
+      opacity: 1
+    });
+  }
+
+  let animationFrame;
+  function updateConfetti() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let active = false;
+
+    particles.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.3;
+      p.rotation += p.vRot;
+      p.opacity -= 0.015;
+
+      if (p.opacity > 0) {
+        active = true;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rotation * Math.PI) / 180);
+        ctx.globalAlpha = Math.max(0, p.opacity);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        ctx.restore();
+      }
+    });
+
+    if (active) {
+      animationFrame = requestAnimationFrame(updateConfetti);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      cancelAnimationFrame(animationFrame);
+    }
+  }
+
+  updateConfetti();
+}
+
+window.onload = function () {
+  initTrack();
+  showStartModal();
+};
+</script>
+</body>
+</html>
